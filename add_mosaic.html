@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>圖片馬賽克工具</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #657487;
+      --line: #d7dee8;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --accent: #a85516;
+      --danger: #b42318;
+      --ok: #16794c;
+      --shadow: 0 14px 34px rgba(23, 32, 42, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .app {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 34px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: clamp(1.55rem, 2.5vw, 2.1rem);
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      min-height: 40px;
+      padding: 9px 14px;
+      background: #eef3f6;
+      color: var(--ink);
+      border: 1px solid #c9d4df;
+    }
+
+    .btn:hover {
+      background: #e3ebf0;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--brand-dark);
+    }
+
+    .btn.warn {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #9a3412;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 15px 16px;
+      font-size: 1rem;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section:last-child {
+      border-bottom: 0;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label,
+    .label {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px;
+      border: 1px solid #c9d4df;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--brand);
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      background: #edf2f5;
+      border: 1px solid #d3dce6;
+      border-radius: 8px;
+    }
+
+    .segmented button {
+      min-height: 38px;
+      background: transparent;
+      color: #314155;
+      border: 1px solid transparent;
+    }
+
+    .segmented button.active {
+      background: #fff;
+      border-color: #bfd0dc;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+      color: var(--brand-dark);
+      font-weight: 800;
+    }
+
+    .slider-row,
+    .check-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .value-badge {
+      min-width: 72px;
+      padding: 5px 8px;
+      border: 1px solid #d5dde7;
+      border-radius: 6px;
+      background: #f8fafc;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      color: #314155;
+    }
+
+    .check-row {
+      justify-content: flex-start;
+      line-height: 1.5;
+      color: #2d3748;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--brand);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .actions .wide {
+      grid-column: 1 / -1;
+    }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.92rem;
+    }
+
+    .status {
+      min-height: 40px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #d8e1ea;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    .stage-panel {
+      min-height: 620px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .stage-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+      color: #475569;
+      font-size: 0.92rem;
+    }
+
+    .stage-wrap {
+      position: relative;
+      min-height: 560px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      overflow: auto;
+      background:
+        linear-gradient(45deg, #e7edf3 25%, transparent 25%),
+        linear-gradient(-45deg, #e7edf3 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e7edf3 75%),
+        linear-gradient(-45deg, transparent 75%, #e7edf3 75%);
+      background-color: #f8fafc;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      background-size: 20px 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+      max-height: 76vh;
+      background: #fff;
+      border: 1px solid #c8d3df;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .empty {
+      width: min(620px, 100%);
+      padding: 42px 24px;
+      border: 2px dashed #bfccd9;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+      text-align: center;
+      color: #526174;
+      line-height: 1.7;
+    }
+
+    .empty strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #203040;
+      font-size: 1.08rem;
+    }
+
+    .kbd {
+      display: inline-block;
+      min-width: 24px;
+      padding: 2px 6px;
+      border: 1px solid #cbd5e1;
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: #fff;
+      color: #334155;
+      font-size: 0.86em;
+    }
+
+    @media (max-width: 900px) {
+      .topbar,
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: stretch;
+      }
+
+      .top-actions .btn {
+        flex: 1 1 160px;
+      }
+
+      .stage-panel {
+        min-height: 520px;
+      }
+
+      .stage-wrap {
+        min-height: 460px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>圖片馬賽克工具</h1>
+        <p class="subtitle">載入照片後，用矩形或橢圓遮蔽人臉、條碼、電話與其他可辨識資訊。</p>
+      </div>
+      <div class="top-actions">
+        <button class="btn" id="undoBtn" type="button" disabled>↶ 復原</button>
+        <button class="btn primary" id="downloadBtn" type="button" disabled>下載圖片</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel" aria-label="工具設定">
+        <h2>工具列</h2>
+        <div class="section">
+          <div class="field">
+            <label for="imageInput">載入照片</label>
+            <input id="imageInput" type="file" accept="image/*">
+          </div>
+          <p class="note">支援一般瀏覽器可讀取的圖片格式。所有處理都在本機瀏覽器完成。</p>
+        </div>
+
+        <div class="section">
+          <div class="field">
+            <div class="label">遮蔽形狀</div>
+            <div class="segmented" role="group" aria-label="遮蔽形狀">
+              <button id="rectBtn" class="active" type="button" data-shape="rect">▭ 矩形</button>
+              <button id="ellipseBtn" type="button" data-shape="ellipse">⬭ 橢圓</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="slider-row">
+              <label for="strengthRange">馬賽克強度</label>
+              <span class="value-badge" id="strengthValue">18 px</span>
+            </div>
+            <input id="strengthRange" type="range" min="4" max="80" step="1" value="18">
+          </div>
+
+          <label class="check-row">
+            <input id="fullImageCheck" type="checkbox">
+            <span>整張圖片套用馬賽克</span>
+          </label>
+        </div>
+
+        <div class="section">
+          <div class="actions">
+            <button class="btn primary wide" id="applyBtn" type="button" disabled>套用目前區域</button>
+            <button class="btn" id="resetSelectionBtn" type="button" disabled>重設區域</button>
+            <button class="btn warn" id="clearBtn" type="button" disabled>重新載入原圖</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="status" id="statusText">請先載入一張圖片。</div>
+        </div>
+
+        <div class="section">
+          <p class="note">
+            操作：拖動內部可移動區域，拖動邊角可調整大小；在圖片其他位置點一下會放置新區域，拖曳則可從頭繪製。
+            套用後會鎖定到圖片上，可繼續新增下一個區域。
+          </p>
+        </div>
+      </aside>
+
+      <section class="panel stage-panel" aria-label="圖片工作區">
+        <div class="stage-head">
+          <span id="fileInfo">尚未載入圖片</span>
+          <span>提示：按 <span class="kbd">Esc</span> 可取消目前拖曳</span>
+        </div>
+        <div class="stage-wrap" id="stageWrap">
+          <div class="empty" id="emptyState">
+            <strong>把照片載入後開始打馬賽克</strong>
+            使用左側工具列選擇形狀與強度，再在圖片上框選要遮蔽的位置。
+          </div>
+          <canvas id="canvas" hidden></canvas>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const imageInput = document.getElementById("imageInput");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const emptyState = document.getElementById("emptyState");
+    const fileInfo = document.getElementById("fileInfo");
+    const statusText = document.getElementById("statusText");
+    const strengthRange = document.getElementById("strengthRange");
+    const strengthValue = document.getElementById("strengthValue");
+    const fullImageCheck = document.getElementById("fullImageCheck");
+    const applyBtn = document.getElementById("applyBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const resetSelectionBtn = document.getElementById("resetSelectionBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const shapeButtons = document.querySelectorAll("[data-shape]");
+
+    const workCanvas = document.createElement("canvas");
+    const workCtx = workCanvas.getContext("2d", { willReadFrequently: true });
+    const originalCanvas = document.createElement("canvas");
+    const originalCtx = originalCanvas.getContext("2d", { willReadFrequently: true });
+
+    const minSize = 18;
+    const handles = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+    let state = {
+      loaded: false,
+      fileName: "mosaic-image",
+      mime: "image/png",
+      shape: "rect",
+      selection: null,
+      history: [],
+      pointer: null
+    };
+
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function normalizeRect(rect) {
+      const x1 = Math.min(rect.x, rect.x + rect.w);
+      const y1 = Math.min(rect.y, rect.y + rect.h);
+      const x2 = Math.max(rect.x, rect.x + rect.w);
+      const y2 = Math.max(rect.y, rect.y + rect.h);
+      return {
+        x: clamp(x1, 0, workCanvas.width),
+        y: clamp(y1, 0, workCanvas.height),
+        w: clamp(x2, 0, workCanvas.width) - clamp(x1, 0, workCanvas.width),
+        h: clamp(y2, 0, workCanvas.height) - clamp(y1, 0, workCanvas.height)
+      };
+    }
+
+    function fitSelection(rect) {
+      const next = normalizeRect(rect);
+      next.w = Math.max(minSize, next.w);
+      next.h = Math.max(minSize, next.h);
+      next.x = clamp(next.x, 0, workCanvas.width - next.w);
+      next.y = clamp(next.y, 0, workCanvas.height - next.h);
+      return next;
+    }
+
+    function defaultSelection() {
+      const w = Math.max(80, workCanvas.width * 0.28);
+      const h = Math.max(60, workCanvas.height * 0.22);
+      return fitSelection({
+        x: (workCanvas.width - w) / 2,
+        y: (workCanvas.height - h) / 2,
+        w,
+        h
+      });
+    }
+
+    function selectionAt(point) {
+      const w = Math.max(70, workCanvas.width * 0.22);
+      const h = Math.max(54, workCanvas.height * 0.18);
+      return fitSelection({
+        x: point.x - w / 2,
+        y: point.y - h / 2,
+        w,
+        h
+      });
+    }
+
+    function updateButtons() {
+      const ready = state.loaded;
+      applyBtn.disabled = !ready;
+      resetSelectionBtn.disabled = !ready;
+      clearBtn.disabled = !ready;
+      downloadBtn.disabled = !ready;
+      undoBtn.disabled = !ready || state.history.length === 0;
+    }
+
+    function pushHistory() {
+      state.history.push(workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height));
+      if (state.history.length > 30) {
+        state.history.shift();
+      }
+      updateButtons();
+    }
+
+    function drawPath(targetCtx, rect, shape) {
+      targetCtx.beginPath();
+      if (shape === "ellipse") {
+        targetCtx.ellipse(rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w / 2, rect.h / 2, 0, 0, Math.PI * 2);
+      } else {
+        targetCtx.rect(rect.x, rect.y, rect.w, rect.h);
+      }
+    }
+
+    function applyMosaic(targetCtx, rect, shape, blockSize) {
+      const area = fitSelection(rect);
+      const size = Math.max(2, Math.round(blockSize));
+      const source = targetCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+      const data = source.data;
+
+      targetCtx.save();
+      drawPath(targetCtx, area, shape);
+      targetCtx.clip();
+
+      for (let y = area.y; y < area.y + area.h; y += size) {
+        for (let x = area.x; x < area.x + area.w; x += size) {
+          const sampleX = Math.floor(clamp(x + size / 2, 0, workCanvas.width - 1));
+          const sampleY = Math.floor(clamp(y + size / 2, 0, workCanvas.height - 1));
+          const index = (sampleY * workCanvas.width + sampleX) * 4;
+          targetCtx.fillStyle = `rgba(${data[index]}, ${data[index + 1]}, ${data[index + 2]}, ${data[index + 3] / 255})`;
+          targetCtx.fillRect(Math.floor(x), Math.floor(y), Math.ceil(size), Math.ceil(size));
+        }
+      }
+
+      targetCtx.restore();
+    }
+
+    function drawSelectionOverlay(rect, shape) {
+      if (!rect || fullImageCheck.checked) return;
+      const line = Math.max(1, Math.round(Math.min(canvas.width, canvas.height) / 450));
+      const handleSize = Math.max(9, Math.round(Math.min(canvas.width, canvas.height) / 90));
+
+      ctx.save();
+      ctx.lineWidth = line * 2;
+      ctx.strokeStyle = "#ffffff";
+      ctx.setLineDash([10, 6]);
+      drawPath(ctx, rect, shape);
+      ctx.stroke();
+      ctx.lineWidth = line;
+      ctx.strokeStyle = "#0f766e";
+      drawPath(ctx, rect, shape);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      getHandlePoints(rect).forEach((handle) => {
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#0f766e";
+        ctx.lineWidth = line;
+        ctx.fillRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
+        ctx.strokeRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
+      });
+      ctx.restore();
+    }
+
+    function redraw() {
+      if (!state.loaded) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(workCanvas, 0, 0);
+
+      if (fullImageCheck.checked) {
+        applyMosaic(ctx, { x: 0, y: 0, w: canvas.width, h: canvas.height }, "rect", Number(strengthRange.value));
+      } else if (state.selection) {
+        applyMosaic(ctx, state.selection, state.shape, Number(strengthRange.value));
+        drawSelectionOverlay(state.selection, state.shape);
+      }
+    }
+
+    function getCanvasPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: clamp((event.clientX - rect.left) * (canvas.width / rect.width), 0, canvas.width),
+        y: clamp((event.clientY - rect.top) * (canvas.height / rect.height), 0, canvas.height)
+      };
+    }
+
+    function getHandlePoints(rect) {
+      const cx = rect.x + rect.w / 2;
+      const cy = rect.y + rect.h / 2;
+      const right = rect.x + rect.w;
+      const bottom = rect.y + rect.h;
+      return [
+        { name: "nw", x: rect.x, y: rect.y },
+        { name: "n", x: cx, y: rect.y },
+        { name: "ne", x: right, y: rect.y },
+        { name: "e", x: right, y: cy },
+        { name: "se", x: right, y: bottom },
+        { name: "s", x: cx, y: bottom },
+        { name: "sw", x: rect.x, y: bottom },
+        { name: "w", x: rect.x, y: cy }
+      ];
+    }
+
+    function hitTest(point) {
+      if (!state.selection || fullImageCheck.checked) return { mode: "draw" };
+      const rect = state.selection;
+      const handleRadius = Math.max(12, Math.min(canvas.width, canvas.height) / 45);
+      const hitHandle = getHandlePoints(rect).find((handle) => {
+        return Math.abs(point.x - handle.x) <= handleRadius && Math.abs(point.y - handle.y) <= handleRadius;
+      });
+
+      if (hitHandle) return { mode: "resize", handle: hitHandle.name };
+      if (point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h) {
+        return { mode: "move" };
+      }
+      return { mode: "draw" };
+    }
+
+    function resizeFromHandle(startRect, handle, point) {
+      const left = startRect.x;
+      const top = startRect.y;
+      const right = startRect.x + startRect.w;
+      const bottom = startRect.y + startRect.h;
+      let nextLeft = left;
+      let nextTop = top;
+      let nextRight = right;
+      let nextBottom = bottom;
+
+      if (handle.includes("w")) nextLeft = point.x;
+      if (handle.includes("e")) nextRight = point.x;
+      if (handle.includes("n")) nextTop = point.y;
+      if (handle.includes("s")) nextBottom = point.y;
+
+      if (handle === "n" || handle === "s") {
+        nextLeft = left;
+        nextRight = right;
+      }
+      if (handle === "e" || handle === "w") {
+        nextTop = top;
+        nextBottom = bottom;
+      }
+
+      return fitSelection({
+        x: Math.min(nextLeft, nextRight),
+        y: Math.min(nextTop, nextBottom),
+        w: Math.abs(nextRight - nextLeft),
+        h: Math.abs(nextBottom - nextTop)
+      });
+    }
+
+    function setCursor(point) {
+      if (!state.loaded || fullImageCheck.checked) {
+        canvas.style.cursor = "default";
+        return;
+      }
+
+      const hit = hitTest(point);
+      const cursors = {
+        nw: "nwse-resize",
+        se: "nwse-resize",
+        ne: "nesw-resize",
+        sw: "nesw-resize",
+        n: "ns-resize",
+        s: "ns-resize",
+        e: "ew-resize",
+        w: "ew-resize"
+      };
+      canvas.style.cursor = hit.mode === "resize" ? cursors[hit.handle] : hit.mode === "move" ? "move" : "crosshair";
+    }
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          workCanvas.width = img.naturalWidth;
+          workCanvas.height = img.naturalHeight;
+          originalCanvas.width = img.naturalWidth;
+          originalCanvas.height = img.naturalHeight;
+
+          workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height);
+          originalCtx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
+          workCtx.drawImage(img, 0, 0);
+          originalCtx.drawImage(img, 0, 0);
+
+          state.loaded = true;
+          state.fileName = file.name.replace(/\.[^.]+$/, "") || "mosaic-image";
+          state.mime = file.type || "image/png";
+          state.selection = defaultSelection();
+          state.history = [];
+          fullImageCheck.checked = false;
+
+          emptyState.hidden = true;
+          canvas.hidden = false;
+          fileInfo.textContent = `${file.name}，${img.naturalWidth} × ${img.naturalHeight}`;
+          setStatus("已載入圖片。可拖曳目前區域，或在圖片上點擊／拖曳新增遮蔽範圍。");
+          updateButtons();
+          redraw();
+        };
+        img.onerror = () => {
+          setStatus("圖片載入失敗，請改用瀏覽器支援的圖片格式。");
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    imageInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (file) loadImage(file);
+    });
+
+    shapeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        state.shape = button.dataset.shape;
+        shapeButtons.forEach((item) => item.classList.toggle("active", item === button));
+        redraw();
+      });
+    });
+
+    strengthRange.addEventListener("input", () => {
+      strengthValue.textContent = `${strengthRange.value} px`;
+      redraw();
+    });
+
+    fullImageCheck.addEventListener("change", () => {
+      applyBtn.textContent = fullImageCheck.checked ? "套用整張圖片" : "套用目前區域";
+      setStatus(fullImageCheck.checked ? "整張圖片模式已開啟，套用後會馬賽克整張照片。" : "整張圖片模式已關閉，可框選局部區域。");
+      redraw();
+    });
+
+    canvas.addEventListener("pointerdown", (event) => {
+      if (!state.loaded || fullImageCheck.checked) return;
+      canvas.setPointerCapture(event.pointerId);
+      const point = getCanvasPoint(event);
+      const hit = hitTest(point);
+      state.pointer = {
+        id: event.pointerId,
+        mode: hit.mode,
+        handle: hit.handle || null,
+        start: point,
+        last: point,
+        startRect: state.selection ? { ...state.selection } : null,
+        moved: false
+      };
+
+      if (hit.mode === "draw") {
+        state.selection = { x: point.x, y: point.y, w: 1, h: 1 };
+      }
+      redraw();
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (!state.loaded) return;
+      const point = getCanvasPoint(event);
+      setCursor(point);
+      if (!state.pointer || state.pointer.id !== event.pointerId) return;
+
+      const dx = point.x - state.pointer.start.x;
+      const dy = point.y - state.pointer.start.y;
+      if (Math.hypot(dx, dy) > 4) state.pointer.moved = true;
+
+      if (state.pointer.mode === "move") {
+        const base = state.pointer.startRect;
+        state.selection = fitSelection({
+          x: base.x + dx,
+          y: base.y + dy,
+          w: base.w,
+          h: base.h
+        });
+      } else if (state.pointer.mode === "resize") {
+        state.selection = resizeFromHandle(state.pointer.startRect, state.pointer.handle, point);
+      } else {
+        state.selection = fitSelection({
+          x: state.pointer.start.x,
+          y: state.pointer.start.y,
+          w: dx,
+          h: dy
+        });
+      }
+      redraw();
+    });
+
+    canvas.addEventListener("pointerup", (event) => {
+      if (!state.pointer || state.pointer.id !== event.pointerId) return;
+      const point = getCanvasPoint(event);
+      if (state.pointer.mode === "draw" && !state.pointer.moved) {
+        state.selection = selectionAt(point);
+      } else if (state.selection) {
+        state.selection = fitSelection(state.selection);
+      }
+      state.pointer = null;
+      redraw();
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      state.pointer = null;
+      redraw();
+    });
+
+    canvas.addEventListener("mouseleave", (event) => {
+      if (!state.pointer) setCursor(getCanvasPoint(event));
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && state.pointer) {
+        state.selection = state.pointer.startRect || state.selection;
+        state.pointer = null;
+        redraw();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        undoBtn.click();
+      }
+    });
+
+    applyBtn.addEventListener("click", () => {
+      if (!state.loaded) return;
+      pushHistory();
+      if (fullImageCheck.checked) {
+        applyMosaic(workCtx, { x: 0, y: 0, w: workCanvas.width, h: workCanvas.height }, "rect", Number(strengthRange.value));
+        setStatus("已將整張圖片套用馬賽克。");
+      } else {
+        applyMosaic(workCtx, state.selection, state.shape, Number(strengthRange.value));
+        state.selection = selectionAt({ x: state.selection.x + state.selection.w / 2, y: state.selection.y + state.selection.h / 2 });
+        setStatus("已套用目前區域，可繼續新增下一個馬賽克區域。");
+      }
+      updateButtons();
+      redraw();
+    });
+
+    undoBtn.addEventListener("click", () => {
+      if (!state.loaded || state.history.length === 0) return;
+      const previous = state.history.pop();
+      workCtx.putImageData(previous, 0, 0);
+      setStatus("已復原上一個套用動作。");
+      updateButtons();
+      redraw();
+    });
+
+    resetSelectionBtn.addEventListener("click", () => {
+      if (!state.loaded) return;
+      state.selection = defaultSelection();
+      fullImageCheck.checked = false;
+      applyBtn.textContent = "套用目前區域";
+      setStatus("已將選取區域重設到圖片中心。");
+      redraw();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      if (!state.loaded) return;
+      pushHistory();
+      workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height);
+      workCtx.drawImage(originalCanvas, 0, 0);
+      state.selection = defaultSelection();
+      fullImageCheck.checked = false;
+      applyBtn.textContent = "套用目前區域";
+      setStatus("已回到原始圖片狀態。");
+      updateButtons();
+      redraw();
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      if (!state.loaded) return;
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = workCanvas.width;
+      exportCanvas.height = workCanvas.height;
+      exportCanvas.getContext("2d").drawImage(workCanvas, 0, 0);
+
+      const link = document.createElement("a");
+      link.href = exportCanvas.toDataURL("image/png");
+      link.download = `${state.fileName}_mosaic.png`;
+      link.click();
+      setStatus("已產生下載檔案。");
+    });
+
+    window.addEventListener("resize", redraw);
+    updateButtons();
+  </script>
+</body>
+</html>

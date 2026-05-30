@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web Cam 條碼與 QR Code 解碼器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7f3;
+      --panel: #ffffff;
+      --ink: #18221f;
+      --muted: #66736d;
+      --line: #d7ded9;
+      --brand: #0f766e;
+      --brand-dark: #0b5f59;
+      --accent: #b45309;
+      --danger: #b42318;
+      --ok: #147a4b;
+      --shadow: 0 18px 45px rgba(24, 34, 31, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(244, 247, 243, 0.96)),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.55rem, 3vw, 2.25rem);
+      line-height: 1.18;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 760px;
+    }
+
+    .status {
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .status[data-kind="ok"] {
+      border-color: rgba(20, 122, 75, 0.35);
+      color: var(--ok);
+    }
+
+    .status[data-kind="warn"] {
+      border-color: rgba(180, 83, 9, 0.35);
+      color: var(--accent);
+    }
+
+    .status[data-kind="error"] {
+      border-color: rgba(180, 35, 24, 0.35);
+      color: var(--danger);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .scanner,
+    .side {
+      min-width: 0;
+    }
+
+    .camera-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111816;
+      box-shadow: var(--shadow);
+      aspect-ratio: 16 / 10;
+    }
+
+    video,
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    canvas {
+      pointer-events: none;
+    }
+
+    .scan-frame {
+      position: absolute;
+      inset: 12%;
+      border: 2px solid rgba(255, 255, 255, 0.88);
+      border-radius: 10px;
+      box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.26);
+      pointer-events: none;
+    }
+
+    .scan-frame::before,
+    .scan-frame::after {
+      content: "";
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: rgba(64, 224, 208, 0.86);
+      box-shadow: 0 0 14px rgba(64, 224, 208, 0.8);
+      animation: scanLine 1.8s ease-in-out infinite alternate;
+    }
+
+    .scan-frame::after {
+      animation-delay: 900ms;
+    }
+
+    @keyframes scanLine {
+      from {
+        top: 12%;
+      }
+
+      to {
+        top: 86%;
+      }
+    }
+
+    .camera-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: rgba(255, 255, 255, 0.82);
+      text-align: center;
+      line-height: 1.8;
+      background: radial-gradient(circle at center, rgba(15, 118, 110, 0.24), rgba(17, 24, 22, 0.96));
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 14px 0 0;
+    }
+
+    .primary,
+    .secondary,
+    .ghost {
+      min-height: 42px;
+      padding: 0 14px;
+      white-space: nowrap;
+    }
+
+    .primary {
+      background: var(--brand);
+      color: #ffffff;
+    }
+
+    .primary:hover {
+      background: var(--brand-dark);
+    }
+
+    .secondary {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    .secondary:hover,
+    .ghost:hover {
+      border-color: rgba(15, 118, 110, 0.42);
+      background: #edf7f5;
+    }
+
+    .ghost {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--brand-dark);
+    }
+
+    select,
+    input[type="file"] {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    select {
+      min-width: 210px;
+      padding: 0 10px;
+    }
+
+    input[type="file"] {
+      max-width: 260px;
+      padding: 8px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .panel + .panel {
+      margin-top: 14px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    .result {
+      padding: 14px;
+    }
+
+    .result-type {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #e8f5f2;
+      color: var(--brand-dark);
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .result-text {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 12px;
+      color: var(--ink);
+      background: #fbfcfb;
+      line-height: 1.55;
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.94rem;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      max-height: 320px;
+      overflow: auto;
+    }
+
+    .history-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfb;
+    }
+
+    .history-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      margin-bottom: 6px;
+    }
+
+    .history-value {
+      margin: 0;
+      color: var(--ink);
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .format-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #fbfcfb;
+      font-size: 0.84rem;
+    }
+
+    .fallback {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(180, 83, 9, 0.35);
+      border-radius: 8px;
+      background: #fff8ed;
+      color: #7c3f05;
+      line-height: 1.7;
+    }
+
+    .fallback.show {
+      display: block;
+    }
+
+    @media (max-width: 860px) {
+      .topbar,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .camera-shell {
+        aspect-ratio: 4 / 3;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        width: min(100% - 22px, 1180px);
+        padding-top: 18px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+      }
+
+      .toolbar > * {
+        width: 100%;
+      }
+
+      select,
+      input[type="file"] {
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>Web Cam 條碼與 QR Code 解碼器</h1>
+        <p class="subtitle">開啟攝影機後，將 QR Code 或條碼放入掃描框中。解碼結果會即時顯示，並保留最近的掃描紀錄。</p>
+      </div>
+      <div class="status" id="status" data-kind="warn">尚未開啟攝影機</div>
+    </header>
+
+    <section class="layout" aria-label="掃描工具">
+      <div class="scanner">
+        <div class="camera-shell">
+          <video id="video" playsinline muted></video>
+          <canvas id="overlay"></canvas>
+          <div class="scan-frame" aria-hidden="true"></div>
+          <div class="camera-empty" id="cameraEmpty">請按「開啟攝影機」開始掃描。瀏覽器會要求攝影機使用權限。</div>
+        </div>
+
+        <div class="toolbar">
+          <button class="primary" id="startBtn" type="button">開啟攝影機</button>
+          <button class="secondary" id="stopBtn" type="button" disabled>停止掃描</button>
+          <select id="cameraSelect" aria-label="選擇攝影機">
+            <option value="">自動選擇攝影機</option>
+          </select>
+          <input id="fileInput" type="file" accept="image/*" aria-label="選擇圖片解碼">
+        </div>
+
+        <div class="fallback" id="fallback">
+          目前瀏覽器不支援原生條碼解碼功能。建議使用新版 Chrome、Edge 或 Android Chrome，並以 localhost、HTTPS 或本機檔案方式開啟此頁面。
+        </div>
+      </div>
+
+      <aside class="side">
+        <section class="panel" aria-label="最新結果">
+          <div class="panel-header">
+            <h2 class="panel-title">最新解碼結果</h2>
+            <button class="ghost" id="copyBtn" type="button" disabled>複製</button>
+          </div>
+          <div class="result">
+            <div class="result-type" id="resultType">尚無資料</div>
+            <textarea class="result-text" id="resultText" readonly placeholder="掃描成功後，內容會顯示在這裡。"></textarea>
+            <p class="hint" id="resultHint">支援格式依瀏覽器而定，常見格式包含 QR Code、Code 128、EAN、UPC、PDF417 與 Data Matrix。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="掃描紀錄">
+          <div class="panel-header">
+            <h2 class="panel-title">掃描紀錄</h2>
+            <button class="ghost" id="clearBtn" type="button" disabled>清除</button>
+          </div>
+          <div class="history-list" id="historyList">
+            <div class="hint">目前沒有掃描紀錄。</div>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="支援格式">
+          <div class="panel-header">
+            <h2 class="panel-title">瀏覽器支援格式</h2>
+          </div>
+          <div class="format-list" id="formatList">
+            <span class="chip">檢查中</span>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+  <script>
+    const video = document.querySelector("#video");
+    const overlay = document.querySelector("#overlay");
+    const statusBox = document.querySelector("#status");
+    const cameraEmpty = document.querySelector("#cameraEmpty");
+    const fallback = document.querySelector("#fallback");
+    const startBtn = document.querySelector("#startBtn");
+    const stopBtn = document.querySelector("#stopBtn");
+    const cameraSelect = document.querySelector("#cameraSelect");
+    const fileInput = document.querySelector("#fileInput");
+    const resultType = document.querySelector("#resultType");
+    const resultText = document.querySelector("#resultText");
+    const resultHint = document.querySelector("#resultHint");
+    const copyBtn = document.querySelector("#copyBtn");
+    const clearBtn = document.querySelector("#clearBtn");
+    const historyList = document.querySelector("#historyList");
+    const formatList = document.querySelector("#formatList");
+
+    const allFormats = [
+      "qr_code",
+      "aztec",
+      "code_128",
+      "code_39",
+      "code_93",
+      "codabar",
+      "data_matrix",
+      "ean_13",
+      "ean_8",
+      "itf",
+      "pdf417",
+      "upc_a",
+      "upc_e"
+    ];
+
+    const formatNames = {
+      qr_code: "QR Code",
+      aztec: "Aztec",
+      code_128: "Code 128",
+      code_39: "Code 39",
+      code_93: "Code 93",
+      codabar: "Codabar",
+      data_matrix: "Data Matrix",
+      ean_13: "EAN-13",
+      ean_8: "EAN-8",
+      itf: "ITF",
+      pdf417: "PDF417",
+      upc_a: "UPC-A",
+      upc_e: "UPC-E"
+    };
+
+    let detector = null;
+    let zxingReader = null;
+    let zxingControls = null;
+    let stream = null;
+    let scanTimer = 0;
+    let scanning = false;
+    let lastValue = "";
+    let lastDetectedAt = 0;
+    const history = [];
+
+    function setStatus(message, kind = "warn") {
+      statusBox.textContent = message;
+      statusBox.dataset.kind = kind;
+    }
+
+    function getFormatName(format) {
+      const normalized = String(format || "").toLowerCase();
+      return formatNames[normalized] || formatNames[format] || format || "未知格式";
+    }
+
+    function getZxingResult(result) {
+      const rawValue = typeof result.getText === "function" ? result.getText() : result.text || "";
+      const barcodeFormat = typeof result.getBarcodeFormat === "function" ? result.getBarcodeFormat() : result.format;
+      const format = window.ZXing?.BarcodeFormat?.[barcodeFormat] || barcodeFormat || "ZXing";
+      return {
+        rawValue,
+        format: String(format).toLowerCase()
+      };
+    }
+
+    function renderFormats(formats) {
+      formatList.innerHTML = "";
+      if (!formats.length) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = "無可用格式";
+        formatList.append(chip);
+        return;
+      }
+
+      for (const format of formats) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = getFormatName(format);
+        formatList.append(chip);
+      }
+    }
+
+    function drawBoxes(codes) {
+      const context = overlay.getContext("2d");
+      const width = video.videoWidth || overlay.clientWidth;
+      const height = video.videoHeight || overlay.clientHeight;
+      overlay.width = width;
+      overlay.height = height;
+      context.clearRect(0, 0, width, height);
+      context.lineWidth = Math.max(3, Math.round(width / 280));
+      context.strokeStyle = "#40e0d0";
+      context.fillStyle = "rgba(64, 224, 208, 0.16)";
+
+      for (const code of codes) {
+        if (!code.boundingBox) {
+          continue;
+        }
+        const { x, y, width: boxWidth, height: boxHeight } = code.boundingBox;
+        context.fillRect(x, y, boxWidth, boxHeight);
+        context.strokeRect(x, y, boxWidth, boxHeight);
+      }
+    }
+
+    function clearOverlay() {
+      const context = overlay.getContext("2d");
+      context.clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = "";
+      clearBtn.disabled = history.length === 0;
+
+      if (!history.length) {
+        const empty = document.createElement("div");
+        empty.className = "hint";
+        empty.textContent = "目前沒有掃描紀錄。";
+        historyList.append(empty);
+        return;
+      }
+
+      for (const item of history) {
+        const row = document.createElement("article");
+        row.className = "history-item";
+
+        const meta = document.createElement("div");
+        meta.className = "history-meta";
+
+        const type = document.createElement("span");
+        type.textContent = item.format;
+
+        const time = document.createElement("time");
+        time.dateTime = item.isoTime;
+        time.textContent = item.displayTime;
+
+        const value = document.createElement("p");
+        value.className = "history-value";
+        value.textContent = item.value;
+
+        meta.append(type, time);
+        row.append(meta, value);
+        historyList.append(row);
+      }
+    }
+
+    function showResult(code) {
+      const value = code.rawValue || "";
+      const format = getFormatName(code.format);
+      const now = Date.now();
+
+      resultType.textContent = format;
+      resultText.value = value;
+      copyBtn.disabled = !value;
+      resultHint.textContent = "已完成解碼。若內容是網址，可直接複製後貼到瀏覽器使用。";
+      setStatus("已偵測到內容", "ok");
+
+      if (value && (value !== lastValue || now - lastDetectedAt > 2500)) {
+        const date = new Date();
+        history.unshift({
+          value,
+          format,
+          isoTime: date.toISOString(),
+          displayTime: date.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        });
+        history.splice(12);
+        renderHistory();
+      }
+
+      lastValue = value;
+      lastDetectedAt = now;
+    }
+
+    async function scanFrame() {
+      if (!scanning || !detector || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        scanTimer = requestAnimationFrame(scanFrame);
+        return;
+      }
+
+      try {
+        const codes = await detector.detect(video);
+        drawBoxes(codes);
+
+        if (codes.length > 0) {
+          showResult(codes[0]);
+        } else if (Date.now() - lastDetectedAt > 1800) {
+          setStatus("掃描中，請對準條碼", "warn");
+          clearOverlay();
+        }
+      } catch (error) {
+        setStatus("解碼時發生錯誤", "error");
+        console.error("解碼失敗：", error);
+      }
+
+      scanTimer = requestAnimationFrame(scanFrame);
+    }
+
+    async function refreshCameraList() {
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        return;
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter((device) => device.kind === "videoinput");
+      const selectedValue = cameraSelect.value;
+      cameraSelect.innerHTML = '<option value="">自動選擇攝影機</option>';
+
+      cameras.forEach((camera, index) => {
+        const option = document.createElement("option");
+        option.value = camera.deviceId;
+        option.textContent = camera.label || `攝影機 ${index + 1}`;
+        cameraSelect.append(option);
+      });
+
+      cameraSelect.value = [...cameraSelect.options].some((option) => option.value === selectedValue) ? selectedValue : "";
+    }
+
+    async function startCamera() {
+      stopCamera();
+
+      if (zxingReader && !detector) {
+        await startZxingCamera();
+        return;
+      }
+
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setStatus("此瀏覽器不支援攝影機存取", "error");
+          cameraEmpty.textContent = "此瀏覽器不支援攝影機存取，請改用新版 Chrome 或 Edge。";
+          return;
+        }
+
+        setStatus("正在等待攝影機權限", "warn");
+        cameraEmpty.textContent = "正在等待攝影機權限，請允許瀏覽器使用攝影機。";
+
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: cameraSelect.value ? undefined : { ideal: "environment" },
+            deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        await video.play();
+        await refreshCameraList();
+
+        scanning = Boolean(detector);
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        cameraEmpty.style.display = "none";
+        if (detector) {
+          setStatus("掃描中，請對準條碼", "warn");
+          scanFrame();
+        } else {
+          fallback.classList.add("show");
+          setStatus("已顯示攝影機，但此瀏覽器不支援解碼", "warn");
+        }
+      } catch (error) {
+        setStatus("無法開啟攝影機", "error");
+        cameraEmpty.style.display = "grid";
+        cameraEmpty.textContent = "無法開啟攝影機，請確認已允許權限，並檢查攝影機是否被其他程式占用。";
+        console.error("攝影機啟動失敗：", error);
+      }
+    }
+
+    async function startZxingCamera() {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setStatus("此瀏覽器不支援攝影機存取", "error");
+          cameraEmpty.textContent = "此瀏覽器不支援攝影機存取，請改用新版 Chrome 或 Edge。";
+          return;
+        }
+
+        setStatus("正在等待攝影機權限", "warn");
+        cameraEmpty.textContent = "正在等待攝影機權限，請允許瀏覽器使用攝影機。";
+
+        zxingControls = await zxingReader.decodeFromVideoDevice(cameraSelect.value || undefined, video, (result) => {
+          if (!result) {
+            return;
+          }
+          showResult(getZxingResult(result));
+        });
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        cameraEmpty.style.display = "none";
+        setStatus("掃描中，請對準條碼", "warn");
+        await refreshCameraList();
+      } catch (error) {
+        setStatus("無法開啟攝影機", "error");
+        cameraEmpty.style.display = "grid";
+        cameraEmpty.textContent = "無法開啟攝影機，請確認已允許權限，並檢查攝影機是否被其他程式占用。";
+        console.error("相容解碼器啟動失敗：", error);
+      }
+    }
+
+    function stopCamera() {
+      scanning = false;
+      cancelAnimationFrame(scanTimer);
+      clearOverlay();
+
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        stream = null;
+      }
+
+      if (zxingControls?.stop) {
+        zxingControls.stop();
+        zxingControls = null;
+      }
+
+      if (zxingReader?.reset) {
+        zxingReader.reset();
+      }
+
+      video.srcObject = null;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      cameraEmpty.style.display = "grid";
+      cameraEmpty.textContent = "請按「開啟攝影機」開始掃描。瀏覽器會要求攝影機使用權限。";
+      if (detector || zxingReader) {
+        setStatus("已停止掃描", "warn");
+      } else {
+        setStatus("已停止攝影機預覽", "warn");
+      }
+    }
+
+    async function decodeImageFile(file) {
+      if (!file || (!detector && !zxingReader)) {
+        return;
+      }
+
+      const image = new Image();
+      image.src = URL.createObjectURL(file);
+      image.onload = async () => {
+        try {
+          if (detector) {
+            const codes = await detector.detect(image);
+            URL.revokeObjectURL(image.src);
+
+            if (codes.length > 0) {
+              showResult(codes[0]);
+            } else {
+              setStatus("圖片中未偵測到條碼", "warn");
+            }
+          } else {
+            const result = await zxingReader.decodeFromImageElement(image);
+            URL.revokeObjectURL(image.src);
+            if (result) {
+              showResult(getZxingResult(result));
+            } else {
+              setStatus("圖片中未偵測到條碼", "warn");
+            }
+          }
+        } catch (error) {
+          setStatus("圖片解碼失敗", "error");
+          console.error("圖片解碼失敗：", error);
+        }
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(image.src);
+        setStatus("圖片讀取失敗", "error");
+      };
+    }
+
+    async function copyResult() {
+      const value = resultText.value.trim();
+      if (!value) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(value);
+        setStatus("結果已複製", "ok");
+      } catch (error) {
+        resultText.select();
+        document.execCommand("copy");
+        setStatus("結果已複製", "ok");
+      }
+    }
+
+    async function setupDetector() {
+      if (!("BarcodeDetector" in window)) {
+        if (window.ZXing?.BrowserMultiFormatReader) {
+          zxingReader = new ZXing.BrowserMultiFormatReader();
+          renderFormats(["qr_code", "code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "itf", "pdf417", "data_matrix"]);
+          setStatus("已啟用相容解碼器", "ok");
+          await refreshCameraList();
+          return;
+        }
+
+        fallback.classList.add("show");
+        renderFormats([]);
+        setStatus("此瀏覽器可預覽攝影機，但不支援解碼", "warn");
+        fileInput.disabled = true;
+        return;
+      }
+
+      try {
+        const supportedFormats = await BarcodeDetector.getSupportedFormats();
+        const usableFormats = allFormats.filter((format) => supportedFormats.includes(format));
+        detector = new BarcodeDetector({ formats: usableFormats.length ? usableFormats : supportedFormats });
+        renderFormats(usableFormats.length ? usableFormats : supportedFormats);
+        setStatus("已就緒，請開啟攝影機", "ok");
+        await refreshCameraList();
+      } catch (error) {
+        fallback.classList.add("show");
+        setStatus("解碼器初始化失敗", "error");
+        console.error("解碼器初始化失敗：", error);
+      }
+    }
+
+    startBtn.addEventListener("click", startCamera);
+    stopBtn.addEventListener("click", stopCamera);
+    cameraSelect.addEventListener("change", () => {
+      if (stream) {
+        startCamera();
+      }
+    });
+    fileInput.addEventListener("change", () => decodeImageFile(fileInput.files[0]));
+    copyBtn.addEventListener("click", copyResult);
+    clearBtn.addEventListener("click", () => {
+      history.length = 0;
+      renderHistory();
+      setStatus("掃描紀錄已清除", "ok");
+    });
+    window.addEventListener("beforeunload", stopCamera);
+
+    setupDetector();
+  </script>
+</body>
+</html>
