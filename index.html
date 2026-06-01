@@ -56,7 +56,7 @@
 
     .tools {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
     }
 
@@ -126,7 +126,7 @@
   <main>
     <header>
       <h1>ImgTools</h1>
-      <p>常用圖片與影像處理工具入口，直接在瀏覽器中開啟使用。</p>
+      <p>常用圖片與影像處理工具入口，直接在瀏覽器中開啟使用，也可部署到 GitHub Pages。</p>
     </header>
 
     <section class="tools" aria-label="工具列表">
@@ -142,6 +142,14 @@
         <span>
           <h2>圖片浮水印工具</h2>
           <p>為圖片加入文字浮水印，方便標示來源、用途或版本。</p>
+        </span>
+        <span class="action">開啟工具 <span aria-hidden="true">→</span></span>
+      </a>
+
+      <a class="tool" href="modify_img.html">
+        <span>
+          <h2>圖片編輯調整工具</h2>
+          <p>本機調整圖片尺寸、旋轉方向與裁切範圍，支援常見影像格式。</p>
         </span>
         <span class="action">開啟工具 <span aria-hidden="true">→</span></span>
       </a>

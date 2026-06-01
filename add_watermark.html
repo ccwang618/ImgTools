@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>圖片浮水印批次工具</title>
+  <title>圖片浮水印工具</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f7fb;
+      --bg: #f4f6f8;
       --panel: #ffffff;
-      --ink: #17202f;
-      --muted: #637083;
-      --line: #d9e0ea;
-      --brand: #1b6ca8;
-      --brand-dark: #14527f;
-      --accent: #d97706;
+      --ink: #17202a;
+      --muted: #627083;
+      --line: #d7dee8;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --accent: #a85516;
       --danger: #b42318;
-      --ok: #147a4b;
-      --shadow: 0 12px 34px rgba(17, 24, 39, 0.09);
+      --ok: #16794c;
+      --shadow: 0 14px 34px rgba(23, 32, 42, 0.1);
     }
 
     * {
@@ -58,9 +58,9 @@
     }
 
     .app {
-      width: min(1180px, calc(100% - 32px));
+      width: min(1180px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 28px 0 36px;
+      padding: 24px 0 34px;
     }
 
     .topbar {
@@ -68,12 +68,12 @@
       align-items: flex-end;
       justify-content: space-between;
       gap: 18px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.55rem, 2.7vw, 2.15rem);
+      margin: 0 0 7px;
+      font-size: clamp(1.55rem, 2.5vw, 2.1rem);
       line-height: 1.2;
     }
 
@@ -85,27 +85,27 @@
 
     .toolbar {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      gap: 10px;
     }
 
     .btn {
       min-height: 40px;
       padding: 9px 14px;
-      background: #edf3f8;
+      background: #eef3f6;
       color: var(--ink);
-      border: 1px solid #c8d5e1;
+      border: 1px solid #c9d4df;
     }
 
     .btn:hover {
-      background: #e2edf6;
+      background: #e3ebf0;
     }
 
     .btn.primary {
       background: var(--brand);
       border-color: var(--brand);
-      color: #fff;
+      color: #ffffff;
     }
 
     .btn.primary:hover {
@@ -119,7 +119,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
+      grid-template-columns: 350px minmax(0, 1fr);
       gap: 18px;
       align-items: start;
     }
@@ -137,7 +137,7 @@
       padding: 15px 16px;
       font-size: 1rem;
       border-bottom: 1px solid var(--line);
-      background: #fbfcff;
+      background: #fbfcfd;
     }
 
     .section {
@@ -151,8 +151,8 @@
 
     .field {
       display: grid;
-      gap: 7px;
-      margin-bottom: 13px;
+      gap: 8px;
+      margin-bottom: 14px;
     }
 
     .field:last-child {
@@ -161,9 +161,9 @@
 
     label,
     .label {
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      color: #2e3a4a;
+      color: #2d3748;
     }
 
     input[type="text"],
@@ -173,9 +173,9 @@
       width: 100%;
       min-height: 40px;
       padding: 9px 10px;
-      border: 1px solid #c9d3df;
+      border: 1px solid #c9d4df;
       border-radius: 6px;
-      background: #fff;
+      background: #ffffff;
       color: var(--ink);
       outline: none;
     }
@@ -190,16 +190,16 @@
     select:focus,
     textarea:focus {
       border-color: var(--brand);
-      box-shadow: 0 0 0 3px rgba(27, 108, 168, 0.15);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
     }
 
     input[type="color"] {
       width: 100%;
       height: 42px;
-      border: 1px solid #c9d3df;
-      border-radius: 6px;
       padding: 4px;
-      background: #fff;
+      border: 1px solid #c9d4df;
+      border-radius: 6px;
+      background: #ffffff;
     }
 
     input[type="range"] {
@@ -218,28 +218,31 @@
       grid-template-columns: 1fr 1fr;
       gap: 6px;
       padding: 4px;
-      border: 1px solid var(--line);
+      background: #edf2f5;
+      border: 1px solid #d3dce6;
       border-radius: 8px;
-      background: #eef3f8;
     }
 
     .segmented button {
-      min-height: 36px;
+      min-height: 38px;
       background: transparent;
-      color: var(--muted);
-      border-radius: 5px;
+      color: #314155;
+      border: 1px solid transparent;
     }
 
     .segmented button.active {
-      background: #fff;
-      color: var(--ink);
+      background: #ffffff;
+      border-color: #bfd0dc;
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+      color: var(--brand-dark);
+      font-weight: 800;
     }
 
     .hint {
+      margin: 0;
       color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.5;
+      font-size: 0.9rem;
+      line-height: 1.55;
     }
 
     .status {
@@ -247,7 +250,7 @@
       gap: 8px;
       margin-top: 12px;
       color: var(--muted);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       line-height: 1.5;
     }
 
@@ -255,75 +258,12 @@
       color: var(--ink);
     }
 
-    .preview-area {
-      min-height: 560px;
-      display: grid;
-      grid-template-rows: auto minmax(340px, 1fr) auto;
-    }
-
-    .preview-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--line);
-      background: #fbfcff;
-    }
-
-    .preview-title {
-      min-width: 0;
-      display: grid;
-      gap: 3px;
-    }
-
-    .preview-title strong {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .preview-stage {
-      display: grid;
-      place-items: center;
-      min-height: 360px;
-      padding: 18px;
-      background:
-        linear-gradient(45deg, #ecf0f5 25%, transparent 25%),
-        linear-gradient(-45deg, #ecf0f5 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #ecf0f5 75%),
-        linear-gradient(-45deg, transparent 75%, #ecf0f5 75%);
-      background-size: 22px 22px;
-      background-position: 0 0, 0 11px, 11px -11px, -11px 0;
-    }
-
-    canvas {
-      max-width: 100%;
-      max-height: 66vh;
-      width: auto;
-      height: auto;
-      background: #fff;
-      border: 1px solid rgba(23, 32, 47, 0.12);
-      box-shadow: 0 10px 24px rgba(17, 24, 39, 0.12);
-    }
-
-    .empty {
-      width: min(460px, 100%);
-      padding: 28px;
-      text-align: center;
-      color: var(--muted);
-      line-height: 1.7;
-      border: 1px dashed #b8c4d2;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.72);
-    }
-
     .file-list {
       max-height: 178px;
       overflow: auto;
       border: 1px solid var(--line);
       border-radius: 6px;
-      background: #fff;
+      background: #ffffff;
     }
 
     .file-item {
@@ -347,14 +287,95 @@
       white-space: nowrap;
     }
 
+    .preview-area {
+      min-height: 590px;
+      display: grid;
+      grid-template-rows: auto minmax(360px, 1fr) auto;
+    }
+
+    .preview-head,
     .preview-foot {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
       padding: 13px 16px;
+      background: #fbfcfd;
+    }
+
+    .preview-head {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-foot {
       border-top: 1px solid var(--line);
-      background: #fbfcff;
+    }
+
+    .preview-title {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .preview-title strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .preview-stage {
+      display: grid;
+      place-items: center;
+      min-height: 360px;
+      padding: 18px;
+      overflow: auto;
+      background:
+        linear-gradient(45deg, #e7edf3 25%, transparent 25%),
+        linear-gradient(-45deg, #e7edf3 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e7edf3 75%),
+        linear-gradient(-45deg, transparent 75%, #e7edf3 75%);
+      background-color: #f8fafc;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      background-size: 20px 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+      max-height: 72vh;
+      width: auto;
+      height: auto;
+      background: #ffffff;
+      border: 1px solid #c8d3df;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    }
+
+    .empty {
+      width: min(520px, 100%);
+      padding: 34px 24px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.7;
+      border: 2px dashed #bfccd9;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #e8f4ee;
+      color: var(--ok);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .warning {
+      color: var(--danger);
+      background: #fff1f0;
     }
 
     progress {
@@ -374,7 +395,7 @@
       overflow: auto;
       margin-top: 10px;
       padding: 10px;
-      background: #17202f;
+      background: #17202a;
       color: #dce7f5;
       border-radius: 6px;
       font: 12px/1.55 Consolas, "Courier New", monospace;
@@ -385,32 +406,20 @@
       display: none !important;
     }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      min-height: 26px;
-      padding: 3px 9px;
-      border-radius: 999px;
-      background: #e8f4ee;
-      color: var(--ok);
-      font-size: 0.78rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .warning {
-      color: var(--danger);
-    }
-
     @media (max-width: 900px) {
       .topbar,
       .preview-foot {
+        display: grid;
+        grid-template-columns: 1fr;
         align-items: stretch;
-        flex-direction: column;
       }
 
       .toolbar {
-        justify-content: flex-start;
+        justify-content: stretch;
+      }
+
+      .toolbar .btn {
+        flex: 1 1 160px;
       }
 
       .layout {
@@ -418,7 +427,7 @@
       }
 
       .preview-area {
-        min-height: 420px;
+        min-height: 460px;
       }
     }
 
@@ -448,22 +457,22 @@
   <main class="app">
     <header class="topbar">
       <div>
-        <h1>圖片浮水印批次工具</h1>
-        <p class="subtitle">選擇圖片檔或資料夾，設定文字浮水印後，批次輸出成 PNG、JPG 或 WebP。</p>
+        <h1>圖片浮水印工具</h1>
+        <p class="subtitle">批次加入文字浮水印，支援 PNG、JPG 與 WebP。所有圖片都只在瀏覽器中處理，可直接放在 GitHub Pages 使用。</p>
       </div>
       <div class="toolbar">
-        <button class="btn" id="pickFilesBtn" type="button">選擇圖片檔</button>
-        <button class="btn" id="pickFolderBtn" type="button">選擇輸入資料夾</button>
+        <button class="btn" id="pickFilesBtn" type="button">載入圖片</button>
+        <button class="btn" id="pickFolderBtn" type="button">載入資料夾</button>
         <button class="btn primary" id="runBtn" type="button" disabled>開始輸出</button>
       </div>
     </header>
 
     <div class="layout">
-      <aside class="panel">
-        <h2>輸入與輸出</h2>
+      <aside class="panel" aria-label="浮水印設定">
+        <h2>輸入設定</h2>
         <section class="section">
           <div class="field">
-            <span class="label">輸入檔案類型</span>
+            <span class="label">圖片格式</span>
             <select id="inputType">
               <option value="image/*">全部圖片</option>
               <option value="image/png">PNG</option>
@@ -474,8 +483,8 @@
           <input class="hidden" id="fileInput" type="file" accept="image/*" multiple>
           <input class="hidden" id="folderInput" type="file" accept="image/*" webkitdirectory multiple>
           <div class="status">
-            <div>已選擇：<strong id="fileCount">0</strong> 張圖片</div>
-            <div id="inputSource">尚未選擇輸入來源</div>
+            <div>已選擇 <strong id="fileCount">0</strong> 張圖片</div>
+            <div id="inputSource">尚未載入圖片。</div>
           </div>
           <div class="file-list hidden" id="fileList"></div>
         </section>
@@ -484,17 +493,18 @@
           <div class="field">
             <span class="label">輸出方式</span>
             <div class="segmented" role="group" aria-label="輸出方式">
-              <button class="active" id="outputFolderMode" type="button">資料夾</button>
-              <button id="downloadMode" type="button">逐張下載</button>
+              <button id="downloadMode" class="active" type="button">逐張下載</button>
+              <button id="outputFolderMode" type="button">輸出資料夾</button>
             </div>
           </div>
-          <div class="field" id="outputFolderField">
+          <p class="hint">GitHub Pages 上建議使用「逐張下載」。若瀏覽器支援資料夾寫入，也可以改用「輸出資料夾」。</p>
+          <div class="field hidden" id="outputFolderField">
             <button class="btn" id="pickOutputBtn" type="button">選擇輸出資料夾</button>
             <div class="hint" id="outputHint">尚未選擇輸出資料夾。</div>
           </div>
           <div class="row">
             <div class="field">
-              <label for="outputType">輸出檔案類型</label>
+              <label for="outputType">輸出格式</label>
               <select id="outputType">
                 <option value="image/png">PNG</option>
                 <option value="image/jpeg">JPG</option>
@@ -526,7 +536,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="fontSize">大小（px）</label>
+              <label for="fontSize">字級，px</label>
               <input id="fontSize" type="number" min="8" max="360" value="54">
             </div>
           </div>
@@ -536,31 +546,31 @@
               <input id="fontColor" type="color" value="#ffffff">
             </div>
             <div class="field">
-              <label for="opacity">透明度（%）</label>
+              <label for="opacity">透明度，%</label>
               <input id="opacity" type="number" min="1" max="100" value="34">
             </div>
           </div>
           <div class="field">
-            <label for="gap">字串間隔：<span id="gapValue">180</span> px</label>
+            <label for="gap">浮水印間距，<span id="gapValue">180</span> px</label>
             <input id="gap" type="range" min="20" max="700" value="180">
           </div>
           <div class="field">
-            <label for="angle">傾斜度：<span id="angleValue">-28</span> 度</label>
+            <label for="angle">旋轉角度，<span id="angleValue">-28</span> 度</label>
             <input id="angle" type="range" min="-80" max="80" value="-28">
           </div>
         </section>
       </aside>
 
-      <section class="panel preview-area">
+      <section class="panel preview-area" aria-label="圖片預覽">
         <div class="preview-head">
           <div class="preview-title">
             <strong id="previewName">預覽</strong>
-            <span class="hint" id="previewMeta">選擇圖片後會顯示第一張預覽。</span>
+            <span class="hint" id="previewMeta">載入圖片後會顯示第一張的浮水印效果。</span>
           </div>
-          <span class="pill" id="supportBadge">本機處理，不上傳圖片</span>
+          <span class="pill" id="supportBadge">GitHub Pages 可用</span>
         </div>
         <div class="preview-stage">
-          <div class="empty" id="emptyState">請先選擇圖片檔或輸入資料夾。</div>
+          <div class="empty" id="emptyState">請先載入圖片或整個資料夾。</div>
           <canvas class="hidden" id="previewCanvas"></canvas>
         </div>
         <div class="preview-foot">
@@ -568,7 +578,7 @@
             <progress id="progress" value="0" max="100"></progress>
             <span class="hint" id="progressText">尚未開始輸出。</span>
           </div>
-          <button class="btn ghost" id="clearBtn" type="button">清除選取</button>
+          <button class="btn ghost" id="clearBtn" type="button">清除清單</button>
         </div>
       </section>
     </div>
@@ -579,8 +589,7 @@
     const state = {
       files: [],
       outputHandle: null,
-      outputMode: "folder",
-      previewUrl: null,
+      outputMode: "download",
       isProcessing: false
     };
 
@@ -630,16 +639,10 @@
     initialize();
 
     function initialize() {
-      const supportsFolderWrite = Boolean(window.showDirectoryPicker);
-      if (!supportsFolderWrite) {
-        state.outputMode = "download";
-        el.supportBadge.textContent = "此瀏覽器不支援輸出資料夾";
-        el.supportBadge.classList.add("warning");
-      }
-
-      setOutputMode(state.outputMode);
       bindEvents();
       updateAcceptType();
+      updateSupportBadge();
+      setOutputMode("download");
       updateControls();
       renderPreview();
     }
@@ -679,6 +682,16 @@
       });
     }
 
+    function updateSupportBadge() {
+      if (window.isSecureContext || location.protocol === "file:") {
+        el.supportBadge.textContent = "GitHub Pages 可用";
+        el.supportBadge.classList.remove("warning");
+      } else {
+        el.supportBadge.textContent = "建議改用 HTTPS 或 localhost";
+        el.supportBadge.classList.add("warning");
+      }
+    }
+
     function updateAcceptType() {
       el.fileInput.accept = el.inputType.value;
       el.folderInput.accept = el.inputType.value;
@@ -688,17 +701,15 @@
       const filtered = files.filter(isAcceptedImage);
       state.files = filtered.sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), "zh-Hant"));
       el.inputSource.textContent = state.files.length
-        ? `來源：${sourceLabel}，已依檔名排序。`
-        : "沒有符合檔案類型的圖片。";
+        ? `來源：${sourceLabel}，已排除不支援的檔案。`
+        : "沒有符合格式的圖片。";
       renderFileList();
       updateControls();
       renderPreview();
     }
 
     function filterSelectedFiles() {
-      if (!state.files.length) {
-        return;
-      }
+      if (!state.files.length) return;
       state.files = state.files.filter(isAcceptedImage);
       renderFileList();
       updateControls();
@@ -706,9 +717,7 @@
     }
 
     function isAcceptedImage(file) {
-      if (!file.type.startsWith("image/")) {
-        return false;
-      }
+      if (!file.type.startsWith("image/")) return false;
       return el.inputType.value === "image/*" || file.type === el.inputType.value;
     }
 
@@ -727,7 +736,7 @@
       if (state.files.length > 80) {
         const more = document.createElement("div");
         more.className = "file-item";
-        more.textContent = `另有 ${state.files.length - 80} 張未列出`;
+        more.textContent = `另有 ${state.files.length - 80} 張圖片未列出`;
         el.fileList.appendChild(more);
       }
     }
@@ -735,6 +744,11 @@
     function setOutputMode(mode) {
       const canUseFolder = Boolean(window.showDirectoryPicker);
       state.outputMode = mode === "folder" && canUseFolder ? "folder" : "download";
+
+      if (mode === "folder" && !canUseFolder) {
+        appendLog("這個瀏覽器不支援輸出資料夾，已改用逐張下載。");
+      }
+
       el.outputFolderMode.classList.toggle("active", state.outputMode === "folder");
       el.downloadMode.classList.toggle("active", state.outputMode === "download");
       el.outputFolderField.classList.toggle("hidden", state.outputMode !== "folder");
@@ -743,7 +757,7 @@
 
     async function pickOutputFolder() {
       if (!window.showDirectoryPicker) {
-        appendLog("目前瀏覽器不支援選擇輸出資料夾，已改用逐張下載。");
+        appendLog("這個瀏覽器不支援選擇輸出資料夾，請使用逐張下載。");
         setOutputMode("download");
         return;
       }
@@ -773,8 +787,9 @@
       if (!state.files.length) {
         el.previewCanvas.classList.add("hidden");
         el.emptyState.classList.remove("hidden");
+        el.emptyState.textContent = "請先載入圖片或整個資料夾。";
         el.previewName.textContent = "預覽";
-        el.previewMeta.textContent = "選擇圖片後會顯示第一張預覽。";
+        el.previewMeta.textContent = "載入圖片後會顯示第一張的浮水印效果。";
         return;
       }
 
@@ -790,7 +805,7 @@
         el.previewCanvas.classList.remove("hidden");
         el.emptyState.classList.add("hidden");
         el.previewName.textContent = getDisplayName(firstFile);
-        el.previewMeta.textContent = `${canvas.width} × ${canvas.height}，${formatBytes(firstFile.size)}`;
+        el.previewMeta.textContent = `${canvas.width} x ${canvas.height}，${formatBytes(firstFile.size)}`;
       } catch (error) {
         el.previewCanvas.classList.add("hidden");
         el.emptyState.classList.remove("hidden");
@@ -799,9 +814,7 @@
     }
 
     async function processImages() {
-      if (!state.files.length || state.isProcessing) {
-        return;
-      }
+      if (!state.files.length || state.isProcessing) return;
 
       state.isProcessing = true;
       updateControls();
@@ -820,7 +833,7 @@
             await writeBlobToFolder(outputName, blob);
           } else {
             downloadBlob(outputName, blob);
-            await delay(180);
+            await delay(220);
           }
 
           successCount += 1;
@@ -867,12 +880,18 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = `700 ${fontSize}px ${el.fontFamily.value}`;
-      const textWidth = ctx.measureText(text).width;
-      const stepX = Math.max(textWidth + gap, fontSize * 2);
+
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const lineHeight = fontSize * 1.25;
+      const maxTextWidth = Math.max(...lines.map((line) => ctx.measureText(line).width), fontSize);
+      const stepX = Math.max(maxTextWidth + gap, fontSize * 2);
 
       for (let y = -diagonal; y <= diagonal; y += stepY) {
         for (let x = -diagonal; x <= diagonal; x += stepX) {
-          ctx.fillText(text, x, y);
+          const startY = y - ((lines.length - 1) * lineHeight) / 2;
+          lines.forEach((line, lineIndex) => {
+            ctx.fillText(line, x, startY + lineIndex * lineHeight);
+          });
         }
       }
 
@@ -889,7 +908,7 @@
         };
         image.onerror = () => {
           URL.revokeObjectURL(url);
-          reject(new Error("圖片讀取失敗"));
+          reject(new Error("圖片讀取失敗。"));
         };
         image.src = url;
       });
@@ -901,7 +920,7 @@
           if (blob) {
             resolve(blob);
           } else {
-            reject(new Error("圖片轉檔失敗"));
+            reject(new Error("圖片輸出失敗。"));
           }
         }, type, quality);
       });
@@ -946,9 +965,11 @@
 
     function clearFiles() {
       state.files = [];
+      state.outputHandle = null;
       el.fileInput.value = "";
       el.folderInput.value = "";
-      el.inputSource.textContent = "尚未選擇輸入來源";
+      el.inputSource.textContent = "尚未載入圖片。";
+      el.outputHint.textContent = "尚未選擇輸出資料夾。";
       renderFileList();
       resetProgress();
       updateControls();
@@ -966,19 +987,13 @@
     }
 
     function formatBytes(bytes) {
-      if (bytes < 1024) {
-        return `${bytes} B`;
-      }
-      if (bytes < 1024 * 1024) {
-        return `${(bytes / 1024).toFixed(1)} KB`;
-      }
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
       return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
     }
 
     function clamp(value, min, max) {
-      if (Number.isNaN(value)) {
-        return min;
-      }
+      if (Number.isNaN(value)) return min;
       return Math.min(max, Math.max(min, value));
     }
 

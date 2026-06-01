@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>圖片編輯調整工具 - stand-alone version</title>
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Styling for custom thumb sliders and custom glass effects if needed */
+    input[type="range"] {
+      accent-color: #3b82f6;
+    }
+    
+    /* Crop overlay custom styles for smooth resize dragging */
+    .crop-handle {
+      width: 12px;
+      height: 12px;
+      background-color: #3b82f6;
+      border: 2px solid white;
+      border-radius: 50%;
+      position: absolute;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-950 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50 shadow-md">
+    <div class="flex items-center space-x-3">
+      <!-- Logo Icon -->
+      <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 font-bold text-xl">
+        IM
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+          圖片編輯調整工具 <span class="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">本機離線版</span>
+        </h1>
+        <p class="text-xs text-slate-400">本地極速處理，支援調整大小、旋轉、矩形與圓形裁切</p>
+      </div>
+    </div>
+    
+    <!-- Action Status/Undo -->
+    <div class="flex items-center space-x-2">
+      <button id="btn-undo" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition flex items-center text-xs font-medium border border-slate-700" title="上一步 Undo" disabled>
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"></path></svg>
+        復原 Undo
+      </button>
+      <button id="btn-redo" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition flex items-center text-xs font-medium border border-slate-700" title="下一步 Redo" disabled>
+        復原下一步 Redo
+        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.934 12.8a1 1 0 000-1.6l-5.334-4A1 1 0 005 8v8a1 1 0 001.6.8l5.334-4zM19.934 12.8a1 1 0 000-1.6l-5.334-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.334-4z"></path></svg>
+      </button>
+      <button id="btn-reset" class="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-900/40 transition text-xs font-medium" disabled>
+        重設 Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- Left Panel: Canvas Area -->
+    <div class="flex-1 bg-slate-950 p-6 flex flex-col justify-between items-center relative overflow-auto min-h-[400px]">
+      
+      <!-- Upload Center Dropzone -->
+      <div id="dropzone" class="w-full max-w-2xl h-96 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer bg-slate-900/50 hover:bg-slate-900/80 transition-all duration-300 my-auto shadow-2xl">
+        <input type="file" id="file-input" class="hidden" accept="image/*">
+        <!-- SVG Icon -->
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 mb-6 border border-slate-700 group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-200 mb-2">拖曳圖片到此處，或點擊瀏覽檔案</h3>
+        <p class="text-sm text-slate-500 max-w-sm mb-6">支援 JPEG, PNG, WebP, GIF, BMP 等常見影像格式</p>
+        <button class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-medium shadow-lg shadow-blue-500/20 transition-all">
+          選擇原始圖片
+        </button>
+      </div>
+
+      <!-- Active Workspace: Render Area (Hidden initially) -->
+      <div id="workspace-container" class="hidden w-full h-full flex flex-col items-center justify-center relative">
+        <div class="relative max-w-full max-h-[70vh] flex items-center justify-center group" id="editor-wrapper">
+          <!-- The real image rendered from source -->
+          <img id="editing-image" class="max-w-full max-h-[70vh] select-none pointer-events-none border border-slate-700 shadow-xl opacity-0 transition-opacity duration-200" src="" alt="Editing Preview">
+          
+          <!-- Interactive Crop Overlay -->
+          <div id="crop-overlay" class="absolute pointer-events-auto hidden">
+            <!-- SVG Mask overlay for dimming effect -->
+            <svg id="crop-mask-svg" class="absolute inset-0 w-full h-full pointer-events-none z-10">
+              <defs>
+                <mask id="svg-hole-mask">
+                  <rect width="100%" height="100%" fill="white" />
+                  <rect id="svg-mask-rect" fill="black" x="0" y="0" width="0" height="0" />
+                  <circle id="svg-mask-circle" fill="black" cx="0" cy="0" r="0" />
+                </mask>
+              </defs>
+              <rect width="100%" height="100%" fill="rgba(15, 23, 42, 0.75)" mask="url(#svg-hole-mask)" />
+            </svg>
+
+            <!-- Draggable Crop Box frame -->
+            <div id="crop-frame" class="absolute border-2 border-blue-500 cursor-move z-20 shadow-[0_0_0_1px_rgba(255,255,255,0.4)]">
+              <!-- Rule of thirds Grid lines -->
+              <div class="absolute inset-x-0 top-1/3 border-t border-dashed border-white/50 pointer-events-none"></div>
+              <div class="absolute inset-x-0 top-2/3 border-t border-dashed border-white/50 pointer-events-none"></div>
+              <div class="absolute inset-y-0 left-1/3 border-l border-dashed border-white/50 pointer-events-none"></div>
+              <div class="absolute inset-y-0 left-2/3 border-l border-dashed border-white/50 pointer-events-none"></div>
+
+              <!-- Crop selection indicator/shape outline (for circle) -->
+              <div id="circle-outline" class="absolute inset-0 border-2 border-white/40 border-dashed rounded-full hidden pointer-events-none"></div>
+
+              <!-- 8 Resize Handles -->
+              <div class="crop-handle -top-1.5 -left-1.5 cursor-nwse-resize" data-handle="tl"></div>
+              <div class="crop-handle -top-1.5 left-[calc(50%-6px)] cursor-ns-resize" data-handle="t"></div>
+              <div class="crop-handle -top-1.5 -right-1.5 cursor-nesw-resize" data-handle="tr"></div>
+              <div class="crop-handle top-[calc(50%-6px)] -right-1.5 cursor-ew-resize" data-handle="r"></div>
+              <div class="crop-handle -bottom-1.5 -right-1.5 cursor-nwse-resize" data-handle="br"></div>
+              <div class="crop-handle -bottom-1.5 left-[calc(50%-6px)] cursor-ns-resize" data-handle="b"></div>
+              <div class="crop-handle -bottom-1.5 -left-1.5 cursor-nesw-resize" data-handle="bl"></div>
+              <div class="crop-handle top-[calc(50%-6px)] -left-1.5 cursor-ew-resize" data-handle="l"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Live Tooltip or Quick Actions -->
+        <div id="crop-actions-bar" class="hidden mt-4 flex items-center gap-3 bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl shadow-lg z-30">
+          <span class="text-xs text-slate-300 font-medium" id="crop-ratio-info flex items-center">裁切範圍調整中：</span>
+          <button id="btn-crop-cancel" class="px-3 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold border border-slate-700 transition">取消</button>
+          <button id="btn-crop-apply" class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 text-xs font-semibold shadow-md shadow-blue-500/20 transition flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 10L20 9"></path></svg>套用裁切
+          </button>
+        </div>
+      </div>
+
+      <!-- Info Footer -->
+      <div id="canvas-footer-stats" class="w-full hidden mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400 flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center space-x-4">
+          <span class="flex items-center"><span class="font-semibold text-slate-300 mr-1">原始尺寸:</span> <span id="stat-orig-dim">-</span></span>
+          <span class="flex items-center"><span class="font-semibold text-slate-300 mr-1">當前尺寸:</span> <span id="stat-curr-dim">-</span></span>
+          <span class="flex items-center"><span class="font-semibold text-slate-300 mr-1">比例:</span> <span id="stat-aspect-ratio">-</span></span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[10px] text-slate-300" id="stat-zoom">縮放: 100%</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Panel: Editor Controller -->
+    <div class="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900 flex flex-col justify-between overflow-y-auto max-h-[calc(100vh-80px)] lg:max-h-none">
+      
+      <!-- Toolbox Panel -->
+      <div class="p-6 space-y-6">
+        <div>
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">影像操作工具</h2>
+          <p class="text-xs text-slate-500">選擇下方功能對目前圖片進行對應編輯</p>
+        </div>
+
+        <!-- Section 1: Resize / 調整大小 -->
+        <div class="border-t border-slate-800/80 pt-5">
+          <h3 class="text-xs font-bold text-slate-200 mb-4 flex items-center">
+            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+            </svg>
+            1. 調整大小 Resize
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- Quick preset scales -->
+            <div class="grid grid-cols-4 gap-1.5">
+              <button class="btn-scale-preset px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition" data-scale="0.5">50%</button>
+              <button class="btn-scale-preset px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition" data-scale="0.75">75%</button>
+              <button class="btn-scale-preset px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition" data-scale="1.5">150%</button>
+              <button class="btn-scale-preset px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition" data-scale="2.0">200%</button>
+            </div>
+
+            <!-- Custom exact Width / Height -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="resize-w" class="block text-[11px] text-slate-400 mb-1">寬度 Width (px)</label>
+                <div class="relative">
+                  <input type="number" id="resize-w" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition font-mono disabled:opacity-40" disabled>
+                </div>
+              </div>
+              <div>
+                <label for="resize-h" class="block text-[11px] text-slate-400 mb-1">高度 Height (px)</label>
+                <div class="relative">
+                  <input type="number" id="resize-h" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition font-mono disabled:opacity-40" disabled>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lock aspect ratio checkbox -->
+            <div class="flex items-center justify-between">
+              <label class="flex items-center text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" id="aspect-lock" class="mr-2 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-0" checked disabled>
+                鎖定寬高比例 Aspect Ratio
+              </label>
+              <button id="btn-apply-resize" class="px-3 py-1 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-600/20 active:scale-95 text-xs font-semibold disabled:opacity-40 disabled:pointer-events-none transition" disabled>
+                進行縮放
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Rotate & Flip / 旋轉與翻轉 -->
+        <div class="border-t border-slate-800/80 pt-5">
+          <h3 class="text-xs font-bold text-slate-200 mb-4 flex items-center">
+            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 6H16"></path>
+            </svg>
+            2. 旋轉與翻轉 Rotate & Flip
+          </h3>
+          
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-rotate-l90" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition flex items-center justify-center border border-slate-700 disabled:opacity-40" disabled>
+                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4z"></path></svg>
+                左旋 90°
+              </button>
+              <button id="btn-rotate-r90" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition flex items-center justify-center border border-slate-700 disabled:opacity-40" disabled>
+                右旋 90°
+                <svg class="w-3.5 h-3.5 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.934 12.8a1 1 0 000-1.6l-5.334-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.334-4z"></path></svg>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-flip-h" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition flex items-center justify-center border border-slate-700 disabled:opacity-40" disabled>
+                水平翻轉 Flip H
+              </button>
+              <button id="btn-flip-v" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 rounded-lg font-medium transition flex items-center justify-center border border-slate-700 disabled:opacity-40" disabled>
+                垂直翻轉 Flip V
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Crop / 裁切 -->
+        <div class="border-t border-slate-800/80 pt-5">
+          <h3 class="text-xs font-bold text-slate-200 mb-4 flex items-center">
+            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.184 4.5h-5.684a2 2 0 00-2 2v5.684m12.184 7.632h5.684a2 2 0 002-2v-5.684m-12.184 0L19.5 4.5m-11.816 11.5L4.5 19.5"></path>
+            </svg>
+            3. 精準裁切 Crop Grid
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- Mode selection -->
+            <div>
+              <span class="block text-[11px] text-slate-400 mb-2">裁切形狀 Crop Shape</span>
+              <div class="grid grid-cols-3 gap-1 px-1 py-1 rounded bg-slate-950 border border-slate-800">
+                <button id="btn-crop-none" class="py-1 bg-blue-600 text-xs text-slate-100 rounded font-medium transition disabled:opacity-40" disabled>不裁切</button>
+                <button id="btn-crop-rect" class="py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition disabled:opacity-40" disabled>矩形裁切</button>
+                <button id="btn-crop-circle" class="py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition disabled:opacity-40" disabled>圓形裁切</button>
+              </div>
+            </div>
+
+            <!-- Aspect ratios preset buttons -->
+            <div id="aspect-ratio-controls" class="space-y-2 hidden">
+              <span class="block text-[11px] text-slate-400">固定比例 Aspect Ratio Preset</span>
+              <div class="grid grid-cols-4 gap-1.5">
+                <button class="btn-aspect-preset px-2 py-1 bg-slate-800/80 hover:bg-slate-700 font-mono text-[10px] text-slate-300 rounded transition" data-aspect="free">Free</button>
+                <button class="btn-aspect-preset px-2 py-1 bg-slate-800/80 hover:bg-slate-700 font-mono text-[10px] text-slate-300 rounded transition" data-aspect="1">1:1</button>
+                <button class="btn-aspect-preset px-2 py-1 bg-slate-800/80 hover:bg-slate-700 font-mono text-[10px] text-slate-300 rounded transition" data-aspect="1.333">4:3</button>
+                <button class="btn-aspect-preset px-2 py-1 bg-slate-800/80 hover:bg-slate-700 font-mono text-[10px] text-slate-300 rounded transition" data-aspect="1.777">16:9</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Export Panel -->
+      <div class="p-6 bg-slate-950 border-t border-slate-800 text-sm space-y-4">
+        <h3 class="text-xs font-bold text-slate-200 flex items-center">
+          <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          4. 匯出下載 Export Settings
+        </h3>
+
+        <!-- Export Format -->
+        <div class="space-y-4">
+          <div class="grid grid-cols-3 gap-1 px-1 py-1 rounded bg-slate-900 border border-slate-800">
+            <button class="btn-format-preset py-1 bg-slate-800 text-xs text-slate-300 rounded font-medium transition disabled:brightness-50" data-format="image/png" disabled>PNG</button>
+            <button class="btn-format-preset py-1 bg-blue-600 text-xs text-slate-100 rounded font-medium transition disabled:brightness-50" data-format="image/jpeg" disabled>JPEG</button>
+            <button class="btn-format-preset py-1 bg-slate-800 text-xs text-slate-300 rounded font-medium transition disabled:brightness-50" data-format="image/webp" disabled>WebP</button>
+          </div>
+
+          <!-- Quality limit slider -->
+          <div id="quality-slider-container">
+            <div class="flex justify-between items-center text-xs text-slate-400 mb-1.5">
+              <span>壓縮畫質 Quality</span>
+              <span id="quality-val" class="font-mono text-slate-200">85%</span>
+            </div>
+            <input type="range" id="quality-range" min="10" max="100" value="85" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer disabled:opacity-40" disabled>
+          </div>
+
+          <!-- Download Action Button -->
+          <button id="btn-download" class="w-full py-3 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl shadow-lg shadow-blue-500/10 font-semibold transition disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center space-x-2" disabled>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>下載修改完成的圖片</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Global Canvas element (hidden in display, used to process full res image) -->
+  <canvas id="core-canvas" class="hidden"></canvas>
+
+  <script>
+    // State management variables
+    let originalImage = null; // Original loaded Image object
+    let canvasHistory = [];   // Array of Canvas elements (history states for Undo)
+    let historyIndex = -1;    // Current pointer in history
+    
+    // Core references
+    const coreCanvas = document.getElementById('core-canvas');
+    const ctx = coreCanvas.getContext('2d');
+    const fileInput = document.getElementById('file-input');
+    const dropzone = document.getElementById('dropzone');
+    const workspaceContainer = document.getElementById('workspace-container');
+    const editingImg = document.getElementById('editing-image');
+    const editorWrapper = document.getElementById('editor-wrapper');
+    const cropOverlay = document.getElementById('crop-overlay');
+    const cropFrame = document.getElementById('crop-frame');
+    const circleOutline = document.getElementById('circle-outline');
+    const cropActionsBar = document.getElementById('crop-actions-bar');
+    
+    // Buttons references
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+    const btnReset = document.getElementById('btn-reset');
+    const btnCropNone = document.getElementById('btn-crop-none');
+    const btnCropRect = document.getElementById('btn-crop-rect');
+    const btnCropCircle = document.getElementById('btn-crop-circle');
+    const btnRotateL90 = document.getElementById('btn-rotate-l90');
+    const btnRotateR90 = document.getElementById('btn-rotate-r90');
+    const btnFlipH = document.getElementById('btn-flip-h');
+    const btnFlipV = document.getElementById('btn-flip-v');
+    const btnApplyResize = document.getElementById('btn-apply-resize');
+    const btnDownload = document.getElementById('btn-download');
+    const btnCropCancel = document.getElementById('btn-crop-cancel');
+    const btnCropApply = document.getElementById('btn-crop-apply');
+    
+    // Inputs
+    const resizeW = document.getElementById('resize-w');
+    const resizeH = document.getElementById('resize-h');
+    const aspectLock = document.getElementById('aspect-lock');
+    const qualityRange = document.getElementById('quality-range');
+    const qualityVal = document.getElementById('quality-val');
+    
+    // Presets
+    const formatButtons = document.querySelectorAll('.btn-format-preset');
+    const aspectPresetButtons = document.querySelectorAll('.btn-aspect-preset');
+    const scaleButtons = document.querySelectorAll('.btn-scale-preset');
+    const aspectContainer = document.getElementById('aspect-ratio-controls');
+    
+    // SVG Masks
+    const maskRect = document.getElementById('svg-mask-rect');
+    const maskCircle = document.getElementById('svg-mask-circle');
+    
+    // Configuration values
+    let exportFormat = 'image/jpeg';
+    let currentAspectLockRatio = null; // null means Free style cropping
+    let resizeAspectValue = 1; // Used to lock resize factor
+    let isEditingCrop = false;
+    let cropStyle = 'none'; // 'none' / 'rect' / 'circle'
+
+    // Crop box layout coordinates relative to RENDERED image dimensions
+    let cropBox = { left: 0, top: 0, width: 0, height: 0 };
+    let dragStart = { x: 0, y: 0 };
+    let cropBoxStart = { left: 0, top: 0, width: 0, height: 0 };
+    let activeDragMode = null; // 'move' or handle types 'tl', 't', 'tr', etc.
+
+    // Initialize drop list listeners
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-blue-500', 'bg-slate-900/80');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-blue-500', 'bg-slate-900/80');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-blue-500', 'bg-slate-900/80');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileSelection(files[0]);
+      }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelection(e.target.files[0]);
+      }
+    });
+
+    // Load file and start editor
+    function handleFileSelection(file) {
+      if (!file.type.startsWith('image/')) {
+        alert('請載入正確的圖片檔案！');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        originalImage = new Image();
+        originalImage.onload = () => {
+          // Initialize Canvas & history
+          initCanvasImage(originalImage);
+          // Show editor layout
+          dropzone.classList.add('hidden');
+          workspaceContainer.classList.remove('hidden');
+          document.getElementById('canvas-footer-stats').classList.remove('hidden');
+          enableEditableControls(true);
+        };
+        originalImage.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Canvas actions setup
+    function initCanvasImage(img) {
+      // Setup master dimensions
+      coreCanvas.width = img.naturalWidth;
+      coreCanvas.height = img.naturalHeight;
+      ctx.clearRect(0, 0, coreCanvas.width, coreCanvas.height);
+      ctx.drawImage(img, 0, 0);
+
+      // Clear layout and restart states
+      canvasHistory = [];
+      historyIndex = -1;
+      saveHistoryState();
+      
+      // Load sizes details
+      document.getElementById('stat-orig-dim').innerText = `${img.naturalWidth} x ${img.naturalHeight}`;
+      resizeAspectValue = img.naturalWidth / img.naturalHeight;
+
+      renderCurrentViewerState();
+    }
+
+    // Save state for undo/redo
+    function saveHistoryState() {
+      // If we are editing somewhere in between and perform new updates, prune standard history beyond this index
+      if (historyIndex < canvasHistory.length - 1) {
+        canvasHistory = canvasHistory.slice(0, historyIndex + 1);
+      }
+      
+      // Store canvas pixels
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = coreCanvas.width;
+      tempCanvas.height = coreCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(coreCanvas, 0, 0);
+      
+      canvasHistory.push(tempCanvas);
+      historyIndex++;
+      
+      updateHistoryButtons();
+    }
+
+    // Update state of Action history buttons
+    function updateHistoryButtons() {
+      btnUndo.disabled = historyIndex === 0;
+      btnRedo.disabled = historyIndex === canvasHistory.length - 1;
+      btnReset.disabled = canvasHistory.length <= 1;
+    }
+
+    // Load canvas based on history state
+    function loadHistoryState(index) {
+      if (index < 0 || index >= canvasHistory.length) return;
+      historyIndex = index;
+      
+      const selectedHistCanvas = canvasHistory[historyIndex];
+      coreCanvas.width = selectedHistCanvas.width;
+      coreCanvas.height = selectedHistCanvas.height;
+      
+      ctx.clearRect(0, 0, coreCanvas.width, coreCanvas.height);
+      ctx.drawImage(selectedHistCanvas, 0, 0);
+      
+      resizeAspectValue = coreCanvas.width / coreCanvas.height;
+      
+      updateHistoryButtons();
+      renderCurrentViewerState();
+      
+      if (isEditingCrop) {
+        exitCropMode();
+      }
+    }
+
+    btnUndo.addEventListener('click', () => loadHistoryState(historyIndex - 1));
+    btnRedo.addEventListener('click', () => loadHistoryState(historyIndex + 1));
+    btnReset.addEventListener('click', () => {
+      if (confirm('確定要復原所有修改，還原至原始圖片嗎？')) {
+        loadHistoryState(0);
+      }
+    });
+
+    // Main Renderer: Updates HTML interface from Canvas
+    function renderCurrentViewerState() {
+      // Generate preview data
+      const dataUrl = coreCanvas.toDataURL('image/png');
+      editingImg.src = dataUrl;
+      editingImg.onload = () => {
+        editingImg.style.opacity = '1';
+        updateStats();
+        syncResizeDimensions();
+      };
+    }
+
+    // Controls toggling
+    function enableEditableControls(enable) {
+      const controls = [
+        resizeW, resizeH, aspectLock, btnRotateL90, btnRotateR90, 
+        btnFlipH, btnFlipV, btnCropNone, btnCropRect, btnCropCircle, 
+        qualityRange, btnApplyResize, btnDownload
+      ];
+      controls.forEach(ctl => {
+        if(ctl) {
+          ctl.disabled = !enable;
+        }
+      });
+      formatButtons.forEach(btn => btn.disabled = !enable);
+      scaleButtons.forEach(btn => btn.disabled = !enable);
+    }
+
+    // Update info stats
+    function updateStats() {
+      document.getElementById('stat-curr-dim').innerText = `${coreCanvas.width} x ${coreCanvas.height}`;
+      const gcdValue = gcd(coreCanvas.width, coreCanvas.height);
+      const ratioStr = `${coreCanvas.width / gcdValue}:${coreCanvas.height / gcdValue}`;
+      document.getElementById('stat-aspect-ratio').innerText = ratioStr;
+      
+      const widthPercent = Math.round((editingImg.clientWidth / coreCanvas.width) * 100);
+      document.getElementById('stat-zoom').innerText = `顯示倍率: ${widthPercent}%`;
+    }
+
+    function gcd(a, b) {
+      return b ? gcd(b, a % b) : a;
+    }
+
+    // Synchronize current dimensions into manual inputs
+    function syncResizeDimensions() {
+      resizeW.value = coreCanvas.width;
+      resizeH.value = coreCanvas.height;
+    }
+
+    // Aspect lock math on Custom Resize
+    resizeW.addEventListener('input', () => {
+      if (aspectLock.checked) {
+        resizeH.value = Math.round(parseInt(resizeW.value) / resizeAspectValue) || '';
+      }
+    });
+
+    resizeH.addEventListener('input', () => {
+      if (aspectLock.checked) {
+        resizeW.value = Math.round(parseInt(resizeH.value) * resizeAspectValue) || '';
+      }
+    });
+
+    // Preset resizing buttons (50%, 75%, 150%, 200%)
+    scaleButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const factor = parseFloat(btn.dataset.scale);
+        resizeW.value = Math.round(coreCanvas.width * factor);
+        resizeH.value = Math.round(coreCanvas.height * factor);
+        applyResizingAction();
+      });
+    });
+
+    btnApplyResize.addEventListener('click', applyResizingAction);
+
+    function applyResizingAction() {
+      const targetW = parseInt(resizeW.value);
+      const targetH = parseInt(resizeH.value);
+      
+      if (!targetW || !targetH || targetW <= 0 || targetH <= 0) {
+        alert('請輸入大於 0 的正確尺寸！');
+        return;
+      }
+
+      // Create a temporary scale canvas
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = targetW;
+      tempCanvas.height = targetH;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Draw scaled image using image smoothing
+      tempCtx.imageSmoothingEnabled = true;
+      tempCtx.imageSmoothingQuality = 'high';
+      tempCtx.drawImage(coreCanvas, 0, 0, coreCanvas.width, coreCanvas.height, 0, 0, targetW, targetH);
+      
+      // Push and overwrite core
+      coreCanvas.width = targetW;
+      coreCanvas.height = targetH;
+      ctx.clearRect(0, 0, targetW, targetH);
+      ctx.drawImage(tempCanvas, 0, 0);
+      
+      saveHistoryState();
+      renderCurrentViewerState();
+    }
+
+    // ---- Rotate & Flip Actions ----
+    btnRotateR90.addEventListener('click', () => applyRotation(90));
+    btnRotateL90.addEventListener('click', () => applyRotation(-90));
+
+    function applyRotation(degrees) {
+      if (degrees === 90 || degrees === -90) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = coreCanvas.height;
+        tempCanvas.height = coreCanvas.width;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
+        tempCtx.rotate((degrees * Math.PI) / 180);
+        tempCtx.drawImage(coreCanvas, -coreCanvas.width / 2, -coreCanvas.height / 2);
+
+        coreCanvas.width = tempCanvas.width;
+        coreCanvas.height = tempCanvas.height;
+        ctx.clearRect(0, 0, coreCanvas.width, coreCanvas.height);
+        ctx.drawImage(tempCanvas, 0, 0);
+
+        saveHistoryState();
+        renderCurrentViewerState();
+      }
+    }
+
+    btnFlipH.addEventListener('click', () => {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = coreCanvas.width;
+      tempCanvas.height = coreCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      tempCtx.scale(-1, 1);
+      tempCtx.drawImage(coreCanvas, -coreCanvas.width, 0);
+
+      ctx.clearRect(0, 0, coreCanvas.width, coreCanvas.height);
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      saveHistoryState();
+      renderCurrentViewerState();
+    });
+
+    btnFlipV.addEventListener('click', () => {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = coreCanvas.width;
+      tempCanvas.height = coreCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      tempCtx.scale(1, -1);
+      tempCtx.drawImage(coreCanvas, 0, -coreCanvas.height);
+
+      ctx.clearRect(0, 0, coreCanvas.width, coreCanvas.height);
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      saveHistoryState();
+      renderCurrentViewerState();
+    });
+
+
+    // ---- Dynamic interactive Cropping Module ----
+
+    btnCropNone.addEventListener('click', exitCropMode);
+    btnCropRect.addEventListener('click', () => activateCropMode('rect'));
+    btnCropCircle.addEventListener('click', () => activateCropMode('circle'));
+
+    // Choose target aspect ratio for rectangle crop box
+    aspectPresetButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Toggle highlight styles
+        aspectPresetButtons.forEach(b => b.classList.remove('bg-blue-600', 'text-white'));
+        btn.classList.add('bg-blue-600', 'text-white');
+        
+        const aspectVal = btn.dataset.aspect;
+        if (aspectVal === 'free') {
+          currentAspectLockRatio = null;
+        } else {
+          currentAspectLockRatio = parseFloat(aspectVal);
+          // Apply aspect ratio constrain immediately onto cropBox width/height
+          adjustCropRatio();
+        }
+        updateCropOverlayDOM();
+      });
+    });
+
+    function activateCropMode(mode) {
+      isEditingCrop = true;
+      cropStyle = mode;
+      
+      // Update Selection Indicator Tabs
+      btnCropNone.className = "py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition";
+      btnCropRect.className = "py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition";
+      btnCropCircle.className = "py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition";
+      
+      if (mode === 'rect') {
+        btnCropRect.className = "py-1 bg-blue-600 text-xs text-slate-100 rounded font-medium transition shadow-md shadow-blue-500/10";
+        aspectContainer.classList.remove('hidden');
+        circleOutline.classList.add('hidden');
+      } else if (mode === 'circle') {
+        btnCropCircle.className = "py-1 bg-blue-600 text-xs text-slate-100 rounded font-medium transition shadow-md shadow-blue-500/10";
+        aspectContainer.classList.add('hidden');
+        circleOutline.classList.remove('hidden');
+        currentAspectLockRatio = 1.0; // Circles are always 1:1 ratio
+      }
+
+      // Show workspace buttons & panels
+      cropOverlay.classList.remove('hidden');
+      cropActionsBar.classList.remove('hidden');
+
+      // Initialize crop box to take up 80% of current image viewport dimensions
+      const imgW = editingImg.clientWidth;
+      const imgH = editingImg.clientHeight;
+      
+      cropOverlay.style.width = `${imgW}px`;
+      cropOverlay.style.height = `${imgH}px`;
+      
+      let initW = imgW * 0.75;
+      let initH = imgH * 0.75;
+      
+      if (currentAspectLockRatio) {
+        if (initW / currentAspectLockRatio <= imgH * 0.75) {
+          initH = initW / currentAspectLockRatio;
+        } else {
+          initW = initH * currentAspectLockRatio;
+        }
+      }
+
+      cropBox = {
+        left: (imgW - initW) / 2,
+        top: (imgH - initH) / 2,
+        width: initW,
+        height: initH
+      };
+
+      updateCropOverlayDOM();
+    }
+
+    function exitCropMode() {
+      isEditingCrop = false;
+      cropStyle = 'none';
+      
+      btnCropNone.className = "py-1 bg-blue-600 text-xs text-slate-100 rounded font-medium transition shadow-md shadow-blue-500/10";
+      btnCropRect.className = "py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition";
+      btnCropCircle.className = "py-1 hover:bg-slate-800 text-xs text-slate-400 hover:text-slate-200 rounded font-medium transition";
+      
+      aspectContainer.classList.add('hidden');
+      cropOverlay.classList.add('hidden');
+      cropActionsBar.classList.add('hidden');
+    }
+
+    btnCropCancel.addEventListener('click', exitCropMode);
+    btnCropApply.addEventListener('click', commitActiveCrop);
+
+    // Apply exact crop selection onto actual canvas pixels
+    function commitActiveCrop() {
+      // Bounding scale check
+      const renderedW = editingImg.clientWidth;
+      const renderedH = editingImg.clientHeight;
+      
+      const scaleX = coreCanvas.width / renderedW;
+      const scaleY = coreCanvas.height / renderedH;
+      
+      const targetCropX = Math.max(0, Math.floor(cropBox.left * scaleX));
+      const targetCropY = Math.max(0, Math.floor(cropBox.top * scaleY));
+      const targetCropW = Math.min(coreCanvas.width - targetCropX, Math.floor(cropBox.width * scaleX));
+      const targetCropH = Math.min(coreCanvas.height - targetCropY, Math.floor(cropBox.height * scaleY));
+
+      if (targetCropW <= 2 || targetCropH <= 2) {
+        alert('選取裁切範圍過小，請重新調整！');
+        return;
+      }
+
+      // Perform crop canvas rendering
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = targetCropW;
+      tempCanvas.height = targetCropH;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      if (cropStyle === 'circle') {
+        // Render a clipped circular image
+        tempCtx.beginPath();
+        const rx = targetCropW / 2;
+        const ry = targetCropH / 2;
+        tempCtx.arc(rx, ry, rx, 0, Math.PI * 2);
+        tempCtx.clip();
+        
+        // Transparent clear outer layout default
+        tempCtx.drawImage(coreCanvas, targetCropX, targetCropY, targetCropW, targetCropH, 0, 0, targetCropW, targetCropH);
+      } else {
+        // Standard rectangle crop
+        tempCtx.drawImage(coreCanvas, targetCropX, targetCropY, targetCropW, targetCropH, 0, 0, targetCropW, targetCropH);
+      }
+
+      coreCanvas.width = targetCropW;
+      coreCanvas.height = targetCropH;
+      ctx.clearRect(0, 0, coreCanvas.width, coreCanvas.height);
+      ctx.drawImage(tempCanvas, 0, 0);
+
+      exitCropMode();
+      saveHistoryState();
+      renderCurrentViewerState();
+    }
+
+    // Force current aspect bounds on sizing
+    function adjustCropRatio() {
+      if (!currentAspectLockRatio) return;
+      const newHeight = cropBox.width / currentAspectLockRatio;
+      const imgH = editingImg.clientHeight;
+      
+      if (cropBox.top + newHeight <= imgH) {
+        cropBox.height = newHeight;
+      } else {
+        cropBox.width = cropBox.height * currentAspectLockRatio;
+      }
+    }
+
+    // Synchronize UI DOM overlays from logical state variables
+    function updateCropOverlayDOM() {
+      // Coordinates setup
+      cropFrame.style.left = `${cropBox.left}px`;
+      cropFrame.style.top = `${cropBox.top}px`;
+      cropFrame.style.width = `${cropBox.width}px`;
+      cropFrame.style.height = `${cropBox.height}px`;
+
+      // Modify visual masks
+      if (cropStyle === 'rect') {
+        maskRect.setAttribute('x', cropBox.left);
+        maskRect.setAttribute('y', cropBox.top);
+        maskRect.setAttribute('width', cropBox.width);
+        maskRect.setAttribute('height', cropBox.height);
+        
+        maskCircle.setAttribute('r', '0');
+      } else if (cropStyle === 'circle') {
+        const cx = cropBox.left + (cropBox.width / 2);
+        const cy = cropBox.top + (cropBox.height / 2);
+        const radius = cropBox.width / 2;
+        
+        maskCircle.setAttribute('cx', cx);
+        maskCircle.setAttribute('cy', cy);
+        maskCircle.setAttribute('r', radius);
+        
+        maskRect.setAttribute('width', '0');
+        maskRect.setAttribute('height', '0');
+      }
+    }
+
+    // Mouse & Touch Interaction math for crop frame dragging/resizing
+    cropFrame.addEventListener('mousedown', (e) => startUserInteraction(e, 'move'));
+    cropFrame.addEventListener('touchstart', (e) => startUserInteraction(e, 'move'), { passive: false });
+
+    const handles = document.querySelectorAll('.crop-handle');
+    handles.forEach(handle => {
+      const mode = handle.dataset.handle;
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        startUserInteraction(e, mode);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        startUserInteraction(e, mode);
+      }, { passive: false });
+    });
+
+    function startUserInteraction(e, mode) {
+      if (!isEditingCrop) return;
+      e.preventDefault();
+      
+      const pointer = e.type.startsWith('touch') ? e.touches[0] : e;
+      activeDragMode = mode;
+      
+      dragStart.x = pointer.clientX;
+      dragStart.y = pointer.clientY;
+      
+      cropBoxStart = { ...cropBox };
+
+      window.addEventListener('mousemove', onUserDragMove);
+      window.addEventListener('mouseup', onUserDragEnd);
+      window.addEventListener('touchmove', onUserDragMove, { passive: false });
+      window.addEventListener('touchend', onUserDragEnd);
+    }
+
+    function onUserDragMove(e) {
+      if (!activeDragMode) return;
+      e.preventDefault();
+      
+      const pointer = e.type.startsWith('touch') ? e.touches[0] : e;
+      const dx = pointer.clientX - dragStart.x;
+      const dy = pointer.clientY - dragStart.y;
+      
+      const imgW = editingImg.clientWidth;
+      const imgH = editingImg.clientHeight;
+      const minSize = 30; // Minimum size of crop frame
+      
+      if (activeDragMode === 'move') {
+        // Relocate entire crop frame
+        let newL = cropBoxStart.left + dx;
+        let newT = cropBoxStart.top + dy;
+        
+        newL = Math.max(0, Math.min(newL, imgW - cropBoxStart.width));
+        newT = Math.max(0, Math.min(newT, imgH - cropBoxStart.height));
+        
+        cropBox.left = newL;
+        cropBox.top = newT;
+      } else {
+        // Resize calculations
+        let newX1 = cropBoxStart.left;
+        let newY1 = cropBoxStart.top;
+        let newX2 = cropBoxStart.left + cropBoxStart.width;
+        let newY2 = cropBoxStart.top + cropBoxStart.height;
+        
+        const mode = activeDragMode;
+        
+        if (mode.includes('l')) newX1 += dx;
+        if (mode.includes('r')) newX2 += dx;
+        if (mode.includes('t')) newY1 += dy;
+        if (mode.includes('b')) newY2 += dy;
+        
+        // Ensure boundaries & minimum shapes
+        if (newX1 < 0) newX1 = 0;
+        if (newX2 > imgW) newX2 = imgW;
+        if (newY1 < 0) newY1 = 0;
+        if (newY2 > imgH) newY2 = imgH;
+        
+        let newW = newX2 - newX1;
+        let newH = newY2 - newY1;
+        
+        // Force minimum boundaries
+        if (newW < minSize) {
+          if (mode.includes('l')) newX1 = newX2 - minSize;
+          else newX2 = newX1 + minSize;
+          newW = minSize;
+        }
+        if (newH < minSize) {
+          if (mode.includes('t')) newY1 = newY2 - minSize;
+          else newY2 = newY1 + minSize;
+          newH = minSize;
+        }
+
+        // Apply locked aspect ratio changes
+        if (currentAspectLockRatio) {
+          if (mode === 'r' || mode === 'br' || mode === 'b') {
+            // Adjust height based on wider aspect
+            newH = newW / currentAspectLockRatio;
+            if (newY1 + newH > imgH) {
+              newH = imgH - newY1;
+              newW = newH * currentAspectLockRatio;
+            }
+            newY2 = newY1 + newH;
+            newX2 = newX1 + newW;
+          } else if (mode === 'l' || mode === 'bl') {
+            newH = newW / currentAspectLockRatio;
+            if (newY1 + newH > imgH) {
+              newH = imgH - newY1;
+              newW = newH * currentAspectLockRatio;
+            }
+            newY2 = newY1 + newH;
+            newX1 = newX2 - newW;
+          } else if (mode === 't' || mode === 'tr') {
+            newH = newW / currentAspectLockRatio;
+            if (newY2 - newH < 0) {
+              newH = newY2;
+              newW = newH * currentAspectLockRatio;
+            }
+            newY1 = newY2 - newH;
+            newX2 = newX1 + newW;
+          } else if (mode === 'tl') {
+            newH = newW / currentAspectLockRatio;
+            if (newY2 - newH < 0) {
+              newH = newY2;
+              newW = newH * currentAspectLockRatio;
+            }
+            newY1 = newY2 - newH;
+            newX1 = newX2 - newW;
+          }
+        }
+        
+        cropBox.left = newX1;
+        cropBox.top = newY1;
+        cropBox.width = newX2 - newX1;
+        cropBox.height = newY2 - newY1;
+      }
+      
+      updateCropOverlayDOM();
+    }
+
+    function onUserDragEnd() {
+      activeDragMode = null;
+      window.removeEventListener('mousemove', onUserDragMove);
+      window.removeEventListener('mouseup', onUserDragEnd);
+      window.removeEventListener('touchmove', onUserDragMove);
+      window.removeEventListener('touchend', onUserDragEnd);
+    }
+
+    // Dynamic viewport recalculation on window resize
+    window.addEventListener('resize', () => {
+      if (isEditingCrop && editingImg.clientWidth > 0) {
+        // Redraw overlay container layout bounding boxes
+        const imgW = editingImg.clientWidth;
+        const imgH = editingImg.clientHeight;
+        cropOverlay.style.width = `${imgW}px`;
+        cropOverlay.style.height = `${imgH}px`;
+        
+        // Recenter or reset crop box bound safety limits
+        cropBox.left = Math.min(cropBox.left, imgW - cropBox.width);
+        cropBox.top = Math.min(cropBox.top, imgH - cropBox.height);
+        
+        updateCropOverlayDOM();
+      }
+    });
+
+    // ---- Format selector & Quality configs ----
+    formatButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        formatButtons.forEach(b => b.className = "btn-format-preset py-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded font-medium transition");
+        btn.className = "btn-format-preset py-1 bg-blue-600 text-xs text-slate-100 rounded font-medium transition shadow-md shadow-blue-500/10";
+        
+        exportFormat = btn.dataset.format;
+        
+        // Toggle quality slider depending on selected format
+        const sliderContainer = document.getElementById('quality-slider-container');
+        if (exportFormat === 'image/png') {
+          sliderContainer.classList.add('opacity-40', 'pointer-events-none');
+          qualityRange.disabled = true;
+        } else {
+          sliderContainer.classList.remove('opacity-40', 'pointer-events-none');
+          qualityRange.disabled = false;
+        }
+      });
+    });
+
+    qualityRange.addEventListener('input', (e) => {
+      qualityVal.innerText = `${e.target.value}%`;
+    });
+
+    // ---- Actual Output and Download execution ----
+    btnDownload.addEventListener('click', () => {
+      const q = parseFloat(qualityRange.value) / 100;
+      
+      // Target appropriate extensions
+      let ext = 'jpg';
+      if (exportFormat === 'image/png') ext = 'png';
+      if (exportFormat === 'image/webp') ext = 'webp';
+
+      // Capture final Canvas Blob
+      coreCanvas.toBlob((blob) => {
+        if (!blob) {
+          alert('影像匯出發生錯誤！');
+          return;
+        }
+        
+        const fileUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = fileUrl;
+        downloadLink.download = `edited_${Date.now()}.${ext}`;
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        
+        // Cleanup memory
+        document.body.removeChild(downloadLink);
+        window.URL.revokeObjectURL(fileUrl);
+      }, exportFormat, exportFormat === 'image/png' ? undefined : q);
+    });
+
+  </script>
+</body>
+</html>
